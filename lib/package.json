@@ -1,0 +1,14 @@
+{
+  "name": "batch-email-sender",
+  "version": "1.0.0",
+  "description": "批量邮件发送工具 - Web版后端",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.8",
+    "tinymce": "^5.10.9",
+    "tinymce-i18n": "^26.9.7",
+    "xlsx": "^0.18.5"
+  }
+}

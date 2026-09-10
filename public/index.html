@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>批量分组发送邮件</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 主容器：左右分栏 -->
+  <div id="main">
+    <!-- 左栏：邮件内容（收窄） -->
+    <div id="left-panel">
+      <!-- 邮件内容区 -->
+      <div class="panel-section flex-grow">
+        <div class="panel-title">邮件内容</div>
+        <div class="panel-body">
+          <!-- 标题 -->
+          <div class="input-row">
+            <label class="fixed-label">标题:</label>
+            <input type="text" id="subject-input" class="flex-input">
+          </div>
+          <!-- 富文本编辑器（TinyMCE 5） -->
+          <textarea id="body-editor" name="body-editor"></textarea>
+        </div>
+      </div>
+      <!-- 附件根目录区 -->
+      <div class="panel-section">
+        <div class="panel-title">附件根目录（按部门名建子文件夹）</div>
+        <div class="panel-body">
+          <div class="input-row">
+            <input type="text" id="attach-path-input" class="flex-input" placeholder="选择/输入/拖拽文件夹到下方区域">
+            <button id="attach-browse-btn" class="browse-btn">选择</button>
+          </div>
+          <div id="attach-drop-zone" class="drop-zone attach-drop-zone">
+            <span class="drop-zone-text">将文件夹拖拽到此处</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右栏：收件人管理（加宽） -->
+    <div id="right-panel">
+      <!-- 收件人列表 -->
+      <div class="panel-section flex-grow">
+        <div class="panel-title">
+          <span>收件人列表 <span id="person-count" class="count-label">0/0 人</span></span>
+          <span class="title-btn-group">
+            <button id="filter-toggle-btn" class="title-btn filter-toggle-btn">筛选收件人分组、部门</button>
+          </span>
+        </div>
+        <div class="panel-body">
+          <div class="table-wrap">
+            <table id="recip-table">
+              <thead>
+                <tr>
+                  <th class="col-sel"><input type="checkbox" id="select-all-cb"></th>
+                  <th class="col-dept">部门</th>
+                  <th class="col-group">分组</th>
+                  <th class="col-name">姓名</th>
+                  <th class="col-email">邮箱</th>
+                  <th class="col-type">收/抄</th>
+                  <th class="col-attach">附件数量</th>
+                </tr>
+              </thead>
+              <tbody id="recip-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <!-- 操作区 -->
+      <div class="panel-section">
+        <div class="panel-body">
+          <div class="action-row">
+            <button id="preview-btn" class="preview-btn">发送预览</button>
+            <button id="send-btn" class="send-btn">发送</button>
+            <span id="status-text" class="action-status"></span>
+            <button id="shutdown-btn" class="icon-btn shutdown-icon-btn" title="关闭服务">⏻</button>
+            <button id="settings-btn" class="settings-btn" title="设置">⚙</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发送进度弹出层 -->
+  <div id="progress-overlay" class="overlay" style="display:none">
+    <div class="overlay-content" style="max-width:480px;">
+      <div class="overlay-header">
+        <span class="overlay-title">正在发送邮件</span>
+      </div>
+      <div class="overlay-body" style="text-align:center;">
+        <div id="progress-info" class="progress-info">准备中...</div>
+        <progress id="progress-bar" value="0" max="100" class="progress-bar" style="width:100%; margin-top:10px;"></progress>
+      </div>
+    </div>
+  </div>
+
+  <!-- 发送预览弹出层 -->
+  <div id="preview-overlay" class="overlay" style="display:none">
+    <div class="overlay-content">
+      <div class="overlay-header">
+        <span class="overlay-title">发送预览</span>
+        <button id="preview-close-btn" class="close-x" title="关闭">✕</button>
+      </div>
+      <div class="overlay-body">
+        <div id="preview-summary" class="preview-summary">共发送 0 封邮件</div>
+        <div class="preview-table-wrap">
+          <table id="preview-table">
+            <thead>
+              <tr>
+                <th class="col-dept">部门</th>
+                <th class="col-people">收件人</th>
+                <th class="col-people">抄送</th>
+                <th class="col-attach-list">附件列表</th>
+              </tr>
+            </thead>
+            <tbody id="preview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="overlay-footer">
+        <button id="preview-send-btn" class="send-btn">确认发送</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义确认对话框 -->
+  <div id="confirm-dialog" class="dialog-overlay" style="display:none">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <span class="dialog-title" id="confirm-title">确认发送</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-msg" id="confirm-msg"></div>
+      </div>
+      <div class="dialog-footer">
+        <button class="dialog-btn dialog-btn-cancel" id="confirm-cancel-btn">取消</button>
+        <button class="dialog-btn dialog-btn-confirm" id="confirm-ok-btn">确认发送</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自定义结果对话框 -->
+  <div id="result-dialog" class="dialog-overlay" style="display:none">
+    <div class="dialog-box">
+      <div class="dialog-header">
+        <span class="dialog-title" id="result-title">发送结果</span>
+      </div>
+      <div class="dialog-body">
+        <div class="dialog-msg" id="result-msg"></div>
+        <div class="dialog-detail" id="result-detail" style="display:none"></div>
+      </div>
+      <div class="dialog-footer">
+        <button class="dialog-btn dialog-btn-success" id="result-ok-btn">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹出层 -->
+  <div id="settings-overlay" class="overlay" style="display:none">
+    <div class="overlay-content" style="max-width:560px;">
+      <div class="overlay-header">
+        <span class="overlay-title">设置</span>
+        <button id="settings-close-btn" class="close-x" title="关闭">✕</button>
+      </div>
+      <div class="overlay-body">
+        <div class="settings-form">
+          <div class="settings-row">
+            <label class="settings-label">SMTP 服务器</label>
+            <input type="text" id="set-smtp-server" class="settings-input">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">SMTP 端口</label>
+            <input type="number" id="set-smtp-port" class="settings-input">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">发件邮箱</label>
+            <input type="text" id="set-username" class="settings-input">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">密码</label>
+            <div class="input-with-btn">
+              <input type="password" id="set-password" class="settings-input" placeholder="****** 表示未修改">
+              <button type="button" id="toggle-password-btn" class="eye-btn" title="显示/隐藏密码">👁</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">SSL 加密</label>
+            <div class="ssl-test-row">
+              <select id="set-use-ssl" class="settings-input ssl-select">
+                <option value="true">开启</option>
+                <option value="false">关闭</option>
+              </select>
+              <button type="button" id="test-conn-btn" class="test-btn">测试连接</button>
+              <button type="button" id="test-mail-btn" class="test-btn">发送测试邮件</button>
+              <span id="test-feedback" class="test-feedback"></span>
+            </div>
+          </div>
+          <div class="settings-divider"></div>
+          <div class="settings-row">
+            <label class="settings-label">服务端口</label>
+            <input type="number" id="set-port" class="settings-input" style="max-width:120px;">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">收件人名单文件</label>
+            <div class="input-with-btn">
+              <input type="text" id="set-recipient-file" class="settings-input">
+              <button type="button" id="browse-file-btn" class="dot3-btn" title="选择文件">···</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">收件人名单 Sheet</label>
+            <input type="text" id="set-sheet-recipients" class="settings-input">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">部门排序 Sheet</label>
+            <input type="text" id="set-sheet-depts" class="settings-input">
+          </div>
+          <div class="settings-row">
+            <label class="settings-label">分组排序 Sheet</label>
+            <input type="text" id="set-sheet-groups" class="settings-input">
+          </div>
+        </div>
+      </div>
+      <div class="overlay-footer">
+        <button id="settings-save-btn" class="send-btn">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 服务已关闭提示 -->
+  <div id="shutdown-overlay" class="overlay" style="display:none">
+    <div class="overlay-content" style="max-width:420px;">
+      <div class="overlay-header">
+        <span class="overlay-title">服务已关闭</span>
+      </div>
+      <div class="overlay-body" style="text-align:center; padding:40px 20px;">
+        <div style="font-size:48px; margin-bottom:16px;">🔌</div>
+        <div style="font-size:18px; color:#555; line-height:1.8;">
+          邮件服务已关闭。<br>
+          下次使用请重新打开程序。<br><br>
+          <span id="shutdown-countdown" style="color:#888; font-size:16px;">3 秒后自动关闭页面...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选弹出层 -->
+  <div id="filter-overlay" class="overlay" style="display:none">
+    <div class="overlay-content" style="max-width:800px;">
+      <div class="overlay-header">
+        <span class="overlay-title">筛选收件人分组、部门</span>
+        <button id="filter-close-btn" class="close-x" title="关闭">✕</button>
+      </div>
+      <div class="overlay-body">
+        <!-- 收件人名单加载 -->
+        <div class="panel-section">
+          <div class="panel-title">收件人名单</div>
+          <div class="panel-body">
+            <div class="input-row">
+              <input type="text" id="recip-path-input" class="flex-input" readonly placeholder="拖拽 Excel 文件到此处或点击选择">
+              <button id="recip-browse-btn" class="browse-btn">选择</button>
+              <input type="file" id="recip-file-input" accept=".xlsx,.xls" style="display:none">
+            </div>
+            <div id="recip-drop-zone" class="drop-zone">
+              <span class="drop-zone-text">将 Excel 文件拖拽到此处</span>
+            </div>
+          </div>
+        </div>
+        <div id="filter-area"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SheetJS -->
+  <script src="vendor/xlsx.full.min.js"></script>
+  <!-- TinyMCE 5 -->
+  <script src="vendor/tinymce/tinymce.min.js"></script>
+  <!-- 各功能模块（按依赖顺序：公共模块优先） -->
+  <script src="modules/dialog.js"></script>
+  <script src="modules/utils.js"></script>
+  <script src="modules/config.js"></script>
+  <script src="modules/recipients.js"></script>
+  <script src="modules/filters.js"></script>
+  <script src="modules/recipient-list.js"></script>
+  <script src="modules/attachments.js"></script>
+  <script src="modules/email-content.js"></script>
+  <script src="modules/preview.js"></script>
+  <script src="modules/send.js"></script>
+  <!-- 主程序（最后加载） -->
+  <script src="app.js"></script>
+</body>
+</html>

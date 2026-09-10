@@ -4,8 +4,21 @@ body { font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; font-size: 16px; 
 
 /* ====== 主容器 ====== */
 #main { display: flex; padding: 8px; height: 100vh; }
-#left-panel { flex: 2; display: flex; flex-direction: column; padding-right: 4px; min-width: 360px; }
-#right-panel { flex: 3; display: flex; flex-direction: column; padding-left: 4px; }
+#left-panel { width: 40%; flex-shrink: 0; display: flex; flex-direction: column; padding-right: 0; min-width: 280px; }
+#right-panel { flex: 1; display: flex; flex-direction: column; padding-left: 0; min-width: 280px; }
+
+/* 左右拖拽分隔条 */
+#panel-resizer {
+  width: 6px; flex-shrink: 0; cursor: col-resize; position: relative;
+  margin: 0 1px;
+}
+#panel-resizer::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
+  width: 2px; transform: translateX(-50%); background: #ccc; border-radius: 1px;
+  transition: background 0.15s;
+}
+#panel-resizer:hover::after,
+#panel-resizer.dragging::after { background: #4a90d9; }
 
 /* ====== 面板区段 ====== */
 .panel-section {
@@ -104,6 +117,10 @@ body { font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; font-size: 16px; 
   background: #4a90d9; color: white; border-color: #4a90d9;
 }
 .title-btn.filter-toggle-btn:hover { background: #3578c8; }
+.title-btn.template-btn {
+  background: #28a745; color: white; border-color: #28a745;
+}
+.title-btn.template-btn:hover { background: #1e8a3a; }
 
 /* ====== 列表工具栏 ====== */
 .list-toolbar {
@@ -333,7 +350,6 @@ tbody tr.unchecked { color: gray; }
 
 /* ====== SSL 行 + 测试按钮 ====== */
 .ssl-test-row { flex: 1; display: flex; align-items: center; gap: 6px; }
-.ssl-select { width: 64px; flex-shrink: 0; }
 .test-btn {
   padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;
   background: #f8f8f8; cursor: pointer; font-family: inherit; font-size: 14px;
@@ -354,3 +370,41 @@ tbody tr.unchecked { color: gray; }
   margin-left: 12px;
 }
 .shutdown-btn:hover { background: #e81123; color: white; }
+
+/* ====== 发件人邮箱标签 ====== */
+.sender-email-badge {
+  font-size: 15px; font-weight: normal; color: #fff; background: #4a90d9;
+  padding: 2px 12px; border-radius: 12px; white-space: nowrap;
+}
+.sender-email-badge.empty {
+  color: #c0392b; background: #fdf0f0; border: 1px solid #f5c6cb;
+}
+
+/* ====== 胶囊开关（类似 Android Toggle）====== */
+.toggle-switch {
+  display: inline-flex; align-items: center; cursor: pointer;
+  flex-shrink: 0; position: relative;
+}
+.toggle-switch input[type="checkbox"] {
+  opacity: 0; width: 0; height: 0; position: absolute;
+}
+.toggle-track {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: #ccc; transition: background 0.2s ease;
+  position: relative; flex-shrink: 0;
+}
+.toggle-track::before {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: left 0.2s ease;
+}
+.toggle-switch input:checked + .toggle-track {
+  background: #4CAF50;
+}
+.toggle-switch input:checked + .toggle-track::before {
+  left: 22px;
+}
+.toggle-hint {
+  font-size: 14px; color: #888; margin-left: 4px;
+}

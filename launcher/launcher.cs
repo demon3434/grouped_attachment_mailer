@@ -13,7 +13,7 @@
  *     /target:winexe /platform:x86
  *     /reference:System.Windows.Forms.dll
  *     /reference:System.Drawing.dll
- *     /win32icon:"图标(服务已启用).ico"
+ *     /win32icon:"icons/图标(服务已启用).ico"
  *     /out:批量分组发送邮件.exe launcher.cs
  */
 
@@ -89,9 +89,9 @@ class Launcher
     [STAThread]
     static int Main(string[] args)
     {
-        // 图标文件路径
-        iconOn = Path.Combine(ExeDir, "图标(服务已启用).ico");
-        iconOff = Path.Combine(ExeDir, "图标(服务已停止).ico");
+        // 图标文件路径（exe 同级 icons 子目录）
+        iconOn = Path.Combine(ExeDir, "icons", "图标(服务已启用).ico");
+        iconOff = Path.Combine(ExeDir, "icons", "图标(服务已停止).ico");
 
         // 尝试获取 Mutex，判断启动器是否已在运行
         bool createdNew;

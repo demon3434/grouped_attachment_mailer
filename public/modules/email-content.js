@@ -43,8 +43,37 @@ function initEmailContent() {
     paste_strip_class_attributes: 'all',
     paste_remove_spans: true,
     setup: function(editor) {
+      var _foreColorPicked = false;  // 用户是否从色板选过字体颜色
+      var _bgColorPicked = false;    // 用户是否从色板选过底色
+
       editor.on('init', function() {
         editor.setContent('<p><br></p>');
+
+        // 设置工具栏颜色按钮图标：字体颜色红色、底色黄色
+        // 按钮名称是 forecolor / backcolor（不是 hilitecolor）
+        editor.fire('TextColorChange', { name: 'forecolor', color: '#FF0000' });
+        editor.fire('TextColorChange', { name: 'backcolor', color: '#FFFF00' });
+
+        // 之后用户从色板选色时，记录标志位
+        editor.on('TextColorChange', function(e) {
+          if (e.name === 'forecolor') _foreColorPicked = true;
+          if (e.name === 'backcolor') _bgColorPicked = true;
+        });
+
+        // 拦截颜色应用命令：用户点按钮时 lastColor 仍是默认黑色 #000000，
+        // 在用户从色板选过其他颜色之前，替换为红/黄
+        editor.addCommand('mceApplyTextcolor', function(format, value) {
+          if (format === 'forecolor' && value === '#000000' && !_foreColorPicked) {
+            value = '#FF0000';
+          } else if (format === 'hilitecolor' && value === '#000000' && !_bgColorPicked) {
+            value = '#FFFF00';
+          }
+          editor.undoManager.transact(function () {
+            editor.focus();
+            editor.formatter.apply(format, { value: value });
+            editor.nodeChanged();
+          });
+        });
       });
     }
   }, langConfig)).then(function(editors) {

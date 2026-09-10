@@ -41,6 +41,7 @@ async function init() {
   initEmailContent();
   initPreview();
   initSend();
+  initPanelResizer();
 
   // 加载配置
   await loadConfig();
@@ -51,6 +52,52 @@ async function init() {
 
 // ====== 启动 ======
 window.addEventListener('DOMContentLoaded', init);
+
+// ====== 左右面板拖拽调整宽度 ======
+function initPanelResizer() {
+  var resizer = $('panel-resizer');
+  var leftPanel = $('left-panel');
+  var main = $('main');
+  var dragging = false;
+
+  // 拖拽遮罩：盖住整个页面（含 iframe），防止 mouseup 被 TinyMCE iframe 吞掉
+  var overlay = null;
+
+  resizer.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    dragging = true;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    // 创建透明遮罩
+    overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999;cursor:col-resize;';
+    document.body.appendChild(overlay);
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var mainRect = main.getBoundingClientRect();
+    var padding = 8;
+    var resizerWidth = 8;
+    var minX = 280;
+    var maxX = mainRect.width - 280 - resizerWidth - padding * 2;
+    var newLeftWidth = e.clientX - mainRect.left - padding;
+    if (newLeftWidth < minX) newLeftWidth = minX;
+    if (newLeftWidth > maxX) newLeftWidth = maxX;
+    leftPanel.style.width = newLeftWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+    if (overlay) { overlay.parentNode.removeChild(overlay); overlay = null; }
+  });
+}
 
 // ====== 全局阻止拖拽默认行为（防止浏览器打开文件夹/文件）======
 // 只 preventDefault 不 stopPropagation，让 dropZone 自己的监听器仍能触发

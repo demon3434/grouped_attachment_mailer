@@ -5,6 +5,36 @@
  */
 
 function initRecipients() {
+  // 生成模板按钮 - 下载只有样例数据的收件人名单模板
+  $('template-btn').addEventListener('click', async () => {
+    try {
+      $('status-text').textContent = '正在生成模板...';
+      const resp = await fetch('/api/template');
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        showResultDialog('生成失败', data.error || '生成模板失败');
+        $('status-text').textContent = '';
+        return;
+      }
+      const buf = await resp.arrayBuffer();
+      const blob = new Blob([buf], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '收件人名单-模板.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      $('status-text').textContent = '模板已下载，请按格式填写收件人后重新加载';
+    } catch (e) {
+      showResultDialog('生成失败', '生成模板失败: ' + e.message);
+      $('status-text').textContent = '';
+    }
+  });
+
   // 浏览按钮 - 使用 filepicker.exe 获取完整路径
   $('recip-browse-btn').addEventListener('click', async () => {
     try {

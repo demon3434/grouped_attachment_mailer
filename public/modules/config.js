@@ -11,6 +11,9 @@ async function loadConfig() {
     if (data.status === 'ok') {
       $('status-text').textContent =
         '配置已加载: ' + data.username + '@' + data.smtp_server;
+      var badge = $('sender-email-display');
+      badge.textContent = '发件人: ' + data.username;
+      badge.classList.remove('empty');
     } else {
       // 区分"未配置账号密码"和其他错误
       if (data.error && data.error.indexOf('密码') >= 0) {
@@ -21,6 +24,9 @@ async function loadConfig() {
         $('status-text').textContent = '配置未加载: ' + (data.error || '未知错误');
       }
       $('send-btn').disabled = true;
+      var badge2 = $('sender-email-display');
+      badge2.textContent = '未配置发件人';
+      badge2.classList.add('empty');
     }
   } catch (e) {
     $('status-text').textContent = '无法连接服务器: ' + e.message;
@@ -88,7 +94,8 @@ async function openSettings() {
     $('set-password').value = cfg.password ? '******' : '';
     $('set-password').type = 'password';
     $('toggle-password-btn').textContent = '👁';
-    $('set-use-ssl').value = String(cfg.use_ssl !== false);
+    $('set-use-ssl').checked = cfg.use_ssl !== false;
+    $('set-random-delay').checked = cfg.random_delay !== false;
     $('set-port').value = cfg.port || 8460;
     $('set-recipient-file').value = cfg.recipient_file || '收件人名单.xlsx';
     $('set-sheet-recipients').value = cfg.sheet_recipients || '收件人名单';
@@ -111,7 +118,8 @@ async function saveSettings() {
     smtp_port: parseInt($('set-smtp-port').value, 10),
     username: $('set-username').value.trim(),
     password: $('set-password').value.trim(),
-    use_ssl: $('set-use-ssl').value === 'true',
+    use_ssl: $('set-use-ssl').checked,
+    random_delay: $('set-random-delay').checked,
     port: parseInt($('set-port').value, 10) || 8460,
     recipient_file: $('set-recipient-file').value.trim(),
     sheet_recipients: $('set-sheet-recipients').value.trim(),
@@ -170,7 +178,7 @@ function collectSettingsForTest() {
     smtp_port: parseInt($('set-smtp-port').value, 10),
     username: $('set-username').value.trim(),
     password: $('set-password').value.trim(),
-    use_ssl: $('set-use-ssl').value === 'true',
+    use_ssl: $('set-use-ssl').checked,
   };
   // 密码是占位符时，需要先获取真实密码
   if (cfg.password === '******') {
@@ -179,25 +187,18 @@ function collectSettingsForTest() {
   return cfg;
 }
 
-/** 设置测试反馈文字 */
-function setTestFeedback(text, type) {
-  var el = $('test-feedback');
-  el.textContent = text;
-  el.className = 'test-feedback' + (type ? ' ' + type : '');
-}
-
-/** 恢复按钮状态（带超时保护） */
+/** 恢复按钮状态（带超时保护），结果用弹出层展示 */
 function withTimeout(btn, label, fn) {
   btn.disabled = true;
   btn.textContent = label + '中...';
-  setTestFeedback(label + '中...', '');
   var restored = false;
   function restore(text, type) {
     if (restored) return;
     restored = true;
     btn.disabled = false;
     btn.textContent = label;
-    setTestFeedback(text, type);
+    var title = (type === 'success') ? (label + '成功') : (label + '失败');
+    showResultDialog(title, text);
   }
   // 超时保护（15秒）
   var timer = setTimeout(function() {
@@ -215,7 +216,7 @@ function withTimeout(btn, label, fn) {
 async function testConnection() {
   var cfg = collectSettingsForTest();
   if (!cfg.smtp_server || !cfg.smtp_port || !cfg.username) {
-    setTestFeedback('请先填写 SMTP 服务器、端口和发件邮箱', 'error');
+    showResultDialog('提示', '请先填写 SMTP 服务器、端口和发件邮箱');
     return;
   }
   var btn = $('test-conn-btn');
@@ -237,7 +238,7 @@ async function testConnection() {
 async function testSendMail() {
   var cfg = collectSettingsForTest();
   if (!cfg.smtp_server || !cfg.smtp_port || !cfg.username) {
-    setTestFeedback('请先填写 SMTP 服务器、端口和发件邮箱', 'error');
+    showResultDialog('提示', '请先填写 SMTP 服务器、端口和发件邮箱');
     return;
   }
   var btn = $('test-mail-btn');

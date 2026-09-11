@@ -73,6 +73,7 @@ async function onSendClick() {
 
   // 发起 SSE 监听进度
   var es = new EventSource('/api/send/progress');
+
   es.onmessage = function(e) {
     var data = JSON.parse(e.data);
 
@@ -123,25 +124,27 @@ async function onSendClick() {
       $('progress-bar').value = data.index;
     }
   };
+
+  // SSE 连接出错时清理
   es.onerror = function() {
     clearCountdown();
     es.close();
   };
 
-  // POST 发送
-  try {
-    await fetch('/api/send', {
+  // 等 SSE 连接建立后再发送 POST，避免首封邮件的 sending 事件丢失
+  es.onopen = function() {
+    fetch('/api/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tasks: sendTasks }),
+    }).catch(function(e) {
+      clearCountdown();
+      es.close();
+      $('progress-overlay').style.display = 'none';
+      showResult('发送失败', '发送请求失败: ' + e.message, null);
+      resetSendButton();
     });
-  } catch (e) {
-    clearCountdown();
-    es.close();
-    $('progress-overlay').style.display = 'none';
-    showResult('发送失败', '发送请求失败: ' + e.message, null);
-    resetSendButton();
-  }
+  };
 }
 
 function onSendDone(data) {

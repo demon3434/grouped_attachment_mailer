@@ -123,9 +123,8 @@ async function onSendClick() {
     if (data.type === 'waiting') {
       clearCountdown();
       var statusText = data.status === 'success' ? '已成功发送给' : '发送给';
-      var resultMark = data.status === 'success' ? ' \u2713' : ' \u2717';
       $('progress-info').textContent =
-        statusText + data.dept + resultMark + '，随机等待' + data.delay +
+        statusText + data.dept + '，随机等待' + data.delay +
         '秒后，将发送下一封邮件给' + data.nextDept;
       var remaining = data.delay;
       $('progress-countdown').textContent = remaining + ' 秒';
@@ -157,23 +156,34 @@ function onSendDone(data) {
   setTimeout(function() {
     resetSendButton();
     $('progress-overlay').style.display = 'none';
-    if (data.aborted) {
-      var detail = data.failDetails
-        .map(function(d) { return d.dept + ': ' + d.error; })
-        .join('\n');
-      showResult('已停止发送',
-        '已发送 ' + data.successCount + ' 封，停止 ' + data.failCount + ' 封',
-        data.failCount > 0 ? '停止详情:\n' + detail : null);
-    } else if (data.failCount === 0) {
-      showResult('发送成功', '全部 ' + data.successCount + ' 封邮件发送成功！', null);
-    } else {
-      var detail = data.failDetails
-        .map(function(d) { return d.dept + ': ' + d.error; })
-        .join('\n');
-      showResult('发送完成',
-        '成功 ' + data.successCount + ' 封, 失败 ' + data.failCount + ' 封',
-        '失败详情:\n' + detail);
-    }
+
+    // 构建汇总标题
+    var title = data.aborted ? '已停止发送' : '发送完成';
+    var summaryParts = [];
+    if (data.successCount) summaryParts.push('成功 ' + data.successCount);
+    if (data.failCount) summaryParts.push('失败 ' + data.failCount);
+    if (data.stopCount) summaryParts.push('停止 ' + data.stopCount);
+    var summary = summaryParts.join('，') + '，共 ' + data.results.length + ' 封';
+
+    // 构建结果表格 HTML
+    var rows = data.results.map(function(r) {
+      var statusText, statusColor;
+      if (r.status === 'success') { statusText = '成功'; statusColor = '#5cb85c'; }
+      else if (r.status === 'error') { statusText = '失败'; statusColor = '#e81123'; }
+      else { statusText = '已停止'; statusColor = '#999'; }
+      var errInfo = r.error ? '<span class="result-err">' + r.error + '</span>' : '';
+      return '<tr>' +
+        '<td>' + r.dept + '</td>' +
+        '<td style="color:' + statusColor + '; font-weight:bold;">' + statusText + '</td>' +
+        '<td>' + errInfo + '</td>' +
+        '</tr>';
+    }).join('');
+
+    var tableHtml = '<table><thead><tr>' +
+      '<th>部门</th><th>状态</th><th>说明</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>';
+
+    showResult(title, summary, tableHtml, true);
   }, 800);
 }
 

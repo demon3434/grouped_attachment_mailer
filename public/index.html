@@ -165,13 +165,13 @@
 
   <!-- 自定义结果对话框 -->
   <div id="result-dialog" class="dialog-overlay" style="display:none">
-    <div class="dialog-box">
+    <div class="dialog-box dialog-box-fixed">
       <div class="dialog-header">
         <span class="dialog-title" id="result-title">发送结果</span>
       </div>
-      <div class="dialog-body">
+      <div class="dialog-body dialog-body-fixed">
         <div class="dialog-msg" id="result-msg"></div>
-        <div class="dialog-detail" id="result-detail" style="display:none"></div>
+        <div id="result-detail" class="result-detail-wrap" style="display:none"></div>
       </div>
       <div class="dialog-footer">
         <button class="dialog-btn dialog-btn-success" id="result-ok-btn">确定</button>

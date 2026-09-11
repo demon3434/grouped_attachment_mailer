@@ -31,13 +31,19 @@ function showConfirm(title, msg, okText) {
 
 /**
  * 显示结果对话框
+ * detail 可以是纯文本或 HTML 字符串
+ * isHtml 为 true 时 detail 作为 HTML 渲染
  */
-function showResult(title, msg, detail) {
+function showResult(title, msg, detail, isHtml) {
   $('result-title').textContent = title;
   $('result-msg').textContent = msg;
   var detailEl = $('result-detail');
   if (detail) {
-    detailEl.textContent = detail;
+    if (isHtml) {
+      detailEl.innerHTML = detail;
+    } else {
+      detailEl.textContent = detail;
+    }
     detailEl.style.display = 'block';
   } else {
     detailEl.style.display = 'none';

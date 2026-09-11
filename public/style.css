@@ -307,9 +307,15 @@ tbody tr.unchecked { color: gray; }
   background: #fff; border-radius: 8px; width: 460px; max-width: 90%;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3); overflow: hidden;
 }
+/* 结果对话框：固定尺寸，内容区可滚动 */
+.dialog-box-fixed {
+  width: 560px; max-width: 90%;
+  max-height: 80vh; display: flex; flex-direction: column;
+}
 .dialog-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px; border-bottom: 1px solid #eee; background: #f5f5f5;
+  flex-shrink: 0;
 }
 .dialog-title { font-size: 18px; font-weight: bold; }
 .dialog-close-btn {
@@ -318,15 +324,36 @@ tbody tr.unchecked { color: gray; }
 }
 .dialog-close-btn:hover { background: #e0e0e0; }
 .dialog-body { padding: 20px; font-size: 16px; line-height: 1.8; }
-.dialog-body .dialog-msg { margin-bottom: 10px; }
+.dialog-body-fixed {
+  padding: 20px; overflow-y: auto; flex: 1; min-height: 0;
+}
+.dialog-body .dialog-msg { margin-bottom: 10px; font-size: 16px; color: #333; }
 .dialog-body .dialog-detail {
   font-size: 14px; color: #888; background: #f9f9f9;
   padding: 10px; border-radius: 4px; max-height: 200px; overflow-y: auto;
   white-space: pre-wrap; word-break: break-all;
 }
+/* 结果详情表格容器 */
+.result-detail-wrap {
+  max-height: 300px; overflow-y: auto;
+  border: 1px solid #ddd; border-radius: 5px; margin-top: 8px;
+}
+.result-detail-wrap table {
+  width: 100%; border-collapse: collapse; font-size: 15px;
+}
+.result-detail-wrap th {
+  background: #f5f5f5; padding: 8px 12px; text-align: left;
+  border-bottom: 1px solid #ddd; font-weight: bold; position: sticky; top: 0;
+}
+.result-detail-wrap td {
+  padding: 8px 12px; border-bottom: 1px solid #eee;
+}
+.result-detail-wrap tr:last-child td { border-bottom: none; }
+.result-err { color: #e81123; font-size: 13px; }
 .dialog-footer {
   padding: 14px 20px; border-top: 1px solid #eee; background: #f5f5f5;
   text-align: right; display: flex; justify-content: flex-end; gap: 10px;
+  flex-shrink: 0;
 }
 .dialog-btn {
   padding: 8px 24px; border: 1px solid #ccc; border-radius: 5px;

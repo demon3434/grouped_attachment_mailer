@@ -34,6 +34,7 @@ async function init() {
   }
 
   // 初始化各模块
+  initDialog();
   initConfig();
   initRecipients();
   initFilters();

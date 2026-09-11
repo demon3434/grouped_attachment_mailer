@@ -1,83 +1,92 @@
 /**
  * modules/utils.js -- 前端公共工具函数
- * groupByDept: 按部门分组收件人，分离收件人/抄送
  */
 
 /**
  * 将选中的收件人按部门分组，每个部门内按 groupType 分离 to/cc
- * 返回: [{ dept, toPeople, ccPeople, toAddrs, ccAddrs, attachments, attachNames, attachCount }]
+ * （向后兼容适配器，核心纯函数委托给 task-builder.js 的 buildMailTasks）
  */
 function groupByDept() {
-  var selected = getSelectedRecipients();
-  if (!selected.length) return [];
+  var selected = (typeof getSelectedRecipients === 'function')
+    ? getSelectedRecipients().map(function(item) { return item.r; })
+    : [];
+  var selfEmail = (state.config && state.config.username) || '';
+  return buildMailTasks(selected, state.deptOrder, state.groupTypes, state.attachmentsMap, state.ccSelf, selfEmail);
+}
 
-  // 按部门分组
-  var deptGroups = {};
-  selected.forEach(function(item) {
-    if (!deptGroups[item.r.dept]) deptGroups[item.r.dept] = [];
-    deptGroups[item.r.dept].push(item.r);
-  });
 
-  // 按 Excel 出现顺序排列部门
-  var orderedDepts = state.deptOrder.filter(function(d) { return d in deptGroups; });
+/**
+ * 转义 HTML 特殊字符，防止 XSS 和布局错乱
+ */
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-  var result = [];
-  orderedDepts.forEach(function(dept) {
-    var people = deptGroups[dept];
-    var toPeople = [];
-    var ccPeople = [];
+/**
+ * 严格校验邮箱地址格式
+ * @param {string} email
+ * @returns {string|null} 错误原因，合规则返回 null
+ */
+function validateEmailAddress(email) {
+  if (!email || !String(email).trim()) {
+    return '邮箱地址为空';
+  }
+  var trimmed = String(email).trim();
 
-    people.forEach(function(p) {
-      var groupType = state.groupTypes[p.group] || '收件人';
-      if (groupType === '抄送') ccPeople.push(p);
-      else toPeople.push(p);
-    });
+  // 排查全角字符及常见中文全角标点
+  if (/[\uff01-\uff5e\u3000-\u303f]/.test(trimmed)) {
+    return '包含全角字符或中文符号（如全角＠或中文逗号句号）';
+  }
 
-    // 仅有 Cc 无 To 时 Cc 转 To
-    if (!toPeople.length && ccPeople.length) {
-      toPeople = ccPeople;
-      ccPeople = [];
-    }
+  // 排查内部空格
+  if (/\s/.test(trimmed)) {
+    return '邮箱中间包含多余空格';
+  }
 
-    var toAddrs = [...new Set(toPeople.map(function(p) { return p.email; }))];
-    var ccAddrs = [...new Set(ccPeople.map(function(p) { return p.email; }))];
+  // 基础结构排查
+  var atIdx = trimmed.indexOf('@');
+  if (atIdx === -1) {
+    return '缺少 @ 符号';
+  }
+  if (atIdx === 0) {
+    return '缺少用户名（@ 前为空）';
+  }
+  if (trimmed.indexOf('@', atIdx + 1) !== -1) {
+    return '包含多个 @ 符号';
+  }
 
-    // 抄送自己：开启时将发件人邮箱加入 cc 列表（去重，避免已在 cc 中时重复）
-    if (state.ccSelf && state.config && state.config.username) {
-      var selfEmail = state.config.username;
-      if (ccAddrs.indexOf(selfEmail) === -1 && toAddrs.indexOf(selfEmail) === -1) {
-        ccAddrs.push(selfEmail);
-      }
-    }
+  var localPart = trimmed.slice(0, atIdx);
+  var domain = trimmed.slice(atIdx + 1);
 
-    // 抄送人员列表（用于预览展示）：在原 ccPeople 基础上追加发件人信息
-    var ccPeopleForPreview = ccPeople.slice();
-    if (state.ccSelf && state.config && state.config.username) {
-      var selfEmail2 = state.config.username;
-      var alreadyInCc = ccPeople.some(function(p) { return p.email === selfEmail2; });
-      var alreadyInTo = toPeople.some(function(p) { return p.email === selfEmail2; });
-      if (!alreadyInCc && !alreadyInTo) {
-        ccPeopleForPreview.push({ name: '（自己）', group: '', email: selfEmail2 });
-      }
-    }
+  if (!domain) {
+    return '缺少域名（@ 后为空）';
+  }
+  if (domain.indexOf('.') === -1) {
+    return '域名缺少顶级后缀（如 .com / .cn）';
+  }
+  if (domain.startsWith('.') || domain.endsWith('.')) {
+    return '域名格式异常（点号位置不正确）';
+  }
+  if (/\.\./.test(domain) || /\.\./.test(localPart)) {
+    return '包含连续的点号(..)';
+  }
 
-    var attachments = state.attachmentsMap[dept] || [];
-    var attachNames = attachments.map(function(f) { return f.name; });
-    var attachFiles = attachments.map(function(f) {
-      return { filename: f.name, path: f.fullPath };
-    });
+  var domainParts = domain.split('.');
+  var tld = domainParts[domainParts.length - 1];
+  if (!tld || tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+    return '顶级域名不合法（需至少2位纯英文字母后缀，如 .com 或 .cn）';
+  }
 
-    result.push({
-      dept: dept,
-      toPeople: toPeople,
-      ccPeople: ccPeopleForPreview,
-      toAddrs: toAddrs,
-      ccAddrs: ccAddrs,
-      attachments: attachFiles,
-      attachNames: attachNames,
-      attachCount: attachments.length,
-    });
-  });
+  // 规范正则匹配 (支持标准邮箱格式)
+  var emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$/;
+  if (!emailRegex.test(trimmed)) {
+    return '不符合标准邮箱格式规范';
+  }
 
-  return result;
+  return null;
 }

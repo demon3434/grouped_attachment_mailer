@@ -6,6 +6,59 @@
  */
 
 /**
+ * 关闭结果对话框（全局通用，支持阻止冒泡）
+ */
+function closeResultDialog(e) {
+  if (e) {
+    if (e.preventDefault) e.preventDefault();
+    if (e.stopPropagation) e.stopPropagation();
+  }
+  var d = document.getElementById('result-dialog');
+  if (d) d.style.display = 'none';
+}
+window.closeResultDialog = closeResultDialog;
+
+/**
+ * 初始化对话框事件监听（关闭按钮、遮罩点击、Esc 快捷键）
+ */
+function initDialog() {
+  var closeBtn = $('result-close-btn');
+  if (closeBtn) {
+    closeBtn.onclick = closeResultDialog;
+  }
+  var footerBtn = $('result-footer-close-btn');
+  if (footerBtn) {
+    footerBtn.onclick = closeResultDialog;
+  }
+
+  // 点击遮罩空白处直接关闭
+  var resultOverlay = $('result-dialog');
+  if (resultOverlay) {
+    resultOverlay.onclick = function(e) {
+      if (e.target === resultOverlay) {
+        closeResultDialog(e);
+      }
+    };
+  }
+
+  // 监听 Esc 键关闭提示框
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (resultOverlay && resultOverlay.style.display !== 'none') {
+        closeResultDialog(e);
+      }
+    }
+  });
+}
+
+// 自动保底绑定（防止其他模块遗漏调用）
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDialog);
+} else {
+  setTimeout(initDialog, 0);
+}
+
+/**
  * 显示确认对话框，返回 Promise<boolean>
  */
 function showConfirm(title, msg, okText) {

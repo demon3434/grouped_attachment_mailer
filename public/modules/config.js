@@ -5,8 +5,8 @@
 async function loadConfig() {
   try {
     const resp = await fetch('/api/config');
-    const data = await resp.json();
     state.config = data;
+    if (window.AppEventBus) AppEventBus.emit('config:updated', data);
 
     if (data.status === 'ok') {
       $('status-text').textContent =

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>多部门点对点一键发送邮件</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <!-- 主容器：左右分栏 -->
@@ -103,19 +103,75 @@
     </div>
   </div>
 
-  <!-- 发送进度弹出层 -->
+  <!-- 发送进度大看板弹出层 -->
   <div id="progress-overlay" class="overlay" style="display:none">
-    <div class="overlay-content progress-dialog">
+    <div class="overlay-content progress-dashboard-dialog">
       <div class="overlay-header">
-        <span class="overlay-title">正在发送邮件</span>
-      </div>
-      <div class="overlay-body">
-        <div id="progress-info" class="progress-info">准备中...</div>
-        <div id="progress-countdown" class="progress-countdown">&nbsp;</div>
-        <div class="progress-bar-wrap">
-          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        <div class="dashboard-header-left">
+          <span class="overlay-title" id="dashboard-title">邮件发送看板</span>
+          <span class="dashboard-dept-badge" id="dashboard-dept-badge"></span>
         </div>
+        <div class="dashboard-header-right">
+          <span id="dashboard-stats" class="dashboard-stats">准备就绪</span>
+        </div>
+      </div>
+      <div class="overlay-body dashboard-body">
+        <!-- 概要卡片：主题与附件 -->
+        <div class="dashboard-summary-card">
+          <div class="summary-line">
+            <span class="summary-label">邮件主题：</span>
+            <span id="dashboard-subject" class="summary-value">（未填写）</span>
+          </div>
+          <div class="summary-line">
+            <span class="summary-label">附件清单：</span>
+            <span id="dashboard-attachments" class="summary-value">无附件</span>
+          </div>
+        </div>
+
+        <!-- 进度条与倒计时区 -->
+        <div class="dashboard-progress-section">
+          <div class="progress-status-row">
+            <span id="progress-info" class="progress-info">准备连接中...</span>
+            <span id="progress-countdown" class="progress-countdown">&nbsp;</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div id="progress-bar-fill" class="progress-bar-fill"></div>
+          </div>
+        </div>
+
+        <!-- 收件人明细表格（省略部门列） -->
+        <div class="dashboard-table-wrap">
+          <table class="dashboard-table">
+            <thead>
+              <tr>
+                <th style="width: 50px;">序号</th>
+                <th style="width: 100px;">姓名</th>
+                <th style="min-width: 200px;">邮箱地址</th>
+                <th style="width: 80px;">类型</th>
+                <th style="width: 100px;">状态</th>
+                <th style="min-width: 200px;">服务器反馈 / 说明</th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-recip-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- 实时通信日志 -->
+        <div class="dashboard-log-box" id="dashboard-log-box">
+          <div class="log-title">实时网络与发信日志</div>
+          <div class="log-content" id="dashboard-log-content">等待发信指令...</div>
+        </div>
+
+        <!-- 外域退信指引提醒 -->
+        <div class="dashboard-notice" id="dashboard-notice" style="display:none;">
+          <span class="notice-icon">ℹ</span>
+          <span>提示：邮件已提交至发件服务器。若外部收件人不存在，系统退信通常在数分钟内返回至您的发件邮箱，请注意查收。</span>
+        </div>
+      </div>
+      <div class="overlay-footer dashboard-footer">
         <button id="progress-abort-btn" class="abort-btn">停止发送</button>
+        <button id="dashboard-retry-btn" class="retry-btn" style="display:none;">一键重试发送</button>
+        <button id="dashboard-close-btn" class="dashboard-close-btn" style="display:none;">完成并关闭</button>
       </div>
     </div>
   </div>
@@ -165,18 +221,19 @@
     </div>
   </div>
 
-  <!-- 自定义结果对话框 -->
+  <!-- 自定义结果/提示对话框 -->
   <div id="result-dialog" class="dialog-overlay" style="display:none">
     <div class="dialog-box dialog-box-fixed">
       <div class="dialog-header">
-        <span class="dialog-title" id="result-title">发送结果</span>
+        <span class="dialog-title" id="result-title">提示</span>
+        <button type="button" id="result-close-btn" class="close-x" title="关闭">✕</button>
       </div>
-      <div class="dialog-body dialog-body-fixed">
+      <div class="dialog-body dialog-body-fixed" style="padding-bottom: 16px;">
         <div class="dialog-msg" id="result-msg"></div>
         <div id="result-detail" class="result-detail-wrap" style="display:none"></div>
       </div>
-      <div class="dialog-footer">
-        <button class="dialog-btn dialog-btn-success" id="result-ok-btn">确定</button>
+      <div class="dialog-footer" style="display:flex; justify-content:flex-end; padding:10px 20px; border-top:1px solid #eee; background:#fafafa;">
+        <button type="button" id="result-footer-close-btn" class="dialog-btn dialog-btn-cancel" style="min-width:88px; font-weight:bold;">关闭</button>
       </div>
     </div>
   </div>
@@ -297,7 +354,6 @@
             <div class="input-row">
               <input type="text" id="recip-path-input" class="flex-input" readonly placeholder="拖拽 Excel 文件到此处或点击选择">
               <button id="recip-browse-btn" class="browse-btn">选择</button>
-              <input type="file" id="recip-file-input" accept=".xlsx,.xls" style="display:none">
             </div>
             <div id="recip-drop-zone" class="drop-zone">
               <span class="drop-zone-text">将 Excel 文件拖拽到此处</span>
@@ -314,17 +370,19 @@
   <!-- TinyMCE 5 -->
   <script src="vendor/tinymce/tinymce.min.js"></script>
   <!-- 各功能模块（按依赖顺序：公共模块优先） -->
-  <script src="modules/dialog.js"></script>
-  <script src="modules/utils.js"></script>
-  <script src="modules/config.js"></script>
-  <script src="modules/recipients.js"></script>
-  <script src="modules/filters.js"></script>
-  <script src="modules/recipient-list.js"></script>
-  <script src="modules/attachments.js"></script>
-  <script src="modules/email-content.js"></script>
-  <script src="modules/preview.js"></script>
-  <script src="modules/send.js"></script>
+  <script src="modules/event-bus.js?v=3"></script>
+  <script src="modules/dialog.js?v=3"></script>
+  <script src="modules/task-builder.js?v=3"></script>
+  <script src="modules/utils.js?v=3"></script>
+  <script src="modules/config.js?v=3"></script>
+  <script src="modules/recipients.js?v=3"></script>
+  <script src="modules/filters.js?v=3"></script>
+  <script src="modules/recipient-list.js?v=3"></script>
+  <script src="modules/attachments.js?v=3"></script>
+  <script src="modules/email-content.js?v=3"></script>
+  <script src="modules/preview.js?v=3"></script>
+  <script src="modules/send.js?v=3"></script>
   <!-- 主程序（最后加载） -->
-  <script src="app.js"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>

@@ -1,8 +1,44 @@
 /**
- * modules/recipients.js -- 收件人名单加载与解析
- * 使用 SheetJS 在浏览器端解析 Excel
- * 支持：文件选择 + 拖拽
+ * 从工作表中解析目标名称列与展示排序（支持部门/分组排序 sheet）
  */
+function extractSortFromWorkbook(wb, sheetName, nameHeader) {
+  var list = [];
+  if (!wb || !sheetName || !wb.SheetNames.includes(sheetName)) return list;
+  var ws = wb.Sheets[sheetName];
+  var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (!rows || rows.length <= 1) return list;
+
+  var sortIdx = -1, nameIdx = -1;
+  rows[0].forEach(function(h, i) {
+    var hdr = String(h).trim();
+    if (hdr === '展示排序' && sortIdx < 0) sortIdx = i;
+    if (hdr === nameHeader && nameIdx < 0) nameIdx = i;
+  });
+  if (sortIdx < 0) sortIdx = 0;
+  if (nameIdx < 0) nameIdx = 1;
+
+  for (var i = 1; i < rows.length; i++) {
+    var sortVal = rows[i][sortIdx];
+    var name = String(rows[i][nameIdx] || '').trim();
+    if (name) {
+      list.push({ sort: Number(sortVal) || 999, name: name });
+    }
+  }
+  list.sort(function(a, b) { return a.sort - b.sort; });
+  return list;
+}
+
+/**
+ * 根据指定排序列表重整原顺序数组
+ */
+function applyOrderSort(orderArray, sortItems, filterFn) {
+  if (!sortItems || !sortItems.length) return orderArray;
+  var sortedNames = sortItems.map(function(item) { return item.name; });
+  orderArray.forEach(function(item) {
+    if (!sortedNames.includes(item)) sortedNames.push(item);
+  });
+  return sortedNames.filter(filterFn);
+}
 
 function initRecipients() {
   // 生成模板按钮 - 下载只有样例数据的收件人名单模板
@@ -160,21 +196,138 @@ async function parseExcelBuffer(buf, filename) {
       }
     }
 
-    // 解析数据行
+    // 解析数据行并执行三大核心校验：单元格非空、Email正则匹配、Email重复
     const recipients = [];
+    const validationErrors = [];
+    const emailSeen = new Map(); // normalizedEmail -> [{ line, dept, group, name, rawEmail }]
+
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
-      if (!row || row.every(c => c === '' || c === null)) continue;
-      const dept = String(row[colMap.dept] || '').trim();
-      const group = String(row[colMap.group] || '').trim();
-      const name = String(row[colMap.name] || '').trim();
-      const email = String(row[colMap.email] || '').trim();
-      if (!email || !email.includes('@')) continue;
-      recipients.push({ dept, group, name, email });
+      // 如果整行都为空，跳过（忽略 Excel 末尾的空白行）
+      if (!row || row.every(c => c === undefined || c === null || String(c).trim() === '')) {
+        continue;
+      }
+
+      const lineNum = i + 1; // 对应 Excel 实际行号（首行为表头）
+      const dept = String(row[colMap.dept] !== undefined && row[colMap.dept] !== null ? row[colMap.dept] : '').trim();
+      const group = String(row[colMap.group] !== undefined && row[colMap.group] !== null ? row[colMap.group] : '').trim();
+      const name = String(row[colMap.name] !== undefined && row[colMap.name] !== null ? row[colMap.name] : '').trim();
+      const rawEmail = String(row[colMap.email] !== undefined && row[colMap.email] !== null ? row[colMap.email] : '').trim();
+
+      // 1. 单元格非空校验
+      const emptyFields = [];
+      if (!dept) emptyFields.push('部门');
+      if (!group) emptyFields.push('分组');
+      if (!name) emptyFields.push('姓名');
+      if (!rawEmail) emptyFields.push('邮箱');
+
+      if (emptyFields.length > 0) {
+        validationErrors.push({
+          line: lineNum,
+          dept: dept || '—',
+          group: group || '—',
+          name: name || '—',
+          email: rawEmail || '—',
+          type: '单元格未填',
+          badgeClass: 'badge-empty',
+          reason: '【' + emptyFields.join('、') + '】未填写',
+        });
+        // 邮箱未填则无法继续做格式与重复比对
+        continue;
+      }
+
+      // 2. Email 正则匹配与格式合法性校验
+      const formatErr = validateEmailAddress(rawEmail);
+      if (formatErr) {
+        validationErrors.push({
+          line: lineNum,
+          dept: dept,
+          group: group,
+          name: name,
+          email: rawEmail,
+          type: '格式错误',
+          badgeClass: 'badge-format',
+          reason: formatErr,
+        });
+        continue;
+      }
+
+      // 3. 邮箱重复比对记录 (不区分大小写比对)
+      const emailKey = rawEmail.toLowerCase();
+      if (!emailSeen.has(emailKey)) {
+        emailSeen.set(emailKey, []);
+      }
+      emailSeen.get(emailKey).push({
+        line: lineNum,
+        dept: dept,
+        group: group,
+        name: name,
+        rawEmail: rawEmail
+      });
+
+      recipients.push({ dept, group, name, email: rawEmail, line: lineNum });
+    }
+
+    // 汇总检查邮箱重复
+    emailSeen.forEach((entries) => {
+      if (entries.length > 1) {
+        const firstLine = entries[0].line;
+        const firstName = entries[0].name;
+        // 第 2 个及以后的每一条均作为重复项提示
+        for (let k = 1; k < entries.length; k++) {
+          const item = entries[k];
+          validationErrors.push({
+            line: item.line,
+            dept: item.dept,
+            group: item.group,
+            name: item.name,
+            email: item.rawEmail,
+            type: '邮箱重复',
+            badgeClass: 'badge-dup',
+            reason: '与第 ' + firstLine + ' 行（' + firstName + '）邮箱重复',
+          });
+        }
+      }
+    });
+
+    // 按 Excel 行号由小到大排序错误，方便用户自上而下核对修正
+    validationErrors.sort((a, b) => a.line - b.line);
+
+    // 发现任何异常，立即阻断并弹窗呈现完整明细表格
+    if (validationErrors.length > 0) {
+      const errorRows = validationErrors.map(function(item) {
+        return '<tr>' +
+          '<td style="white-space:nowrap; font-weight:bold; text-align:center;">第 ' + item.line + ' 行</td>' +
+          '<td class="dept-highlight">' + escapeHtml(item.dept) + '</td>' +
+          '<td>' + escapeHtml(item.group) + '</td>' +
+          '<td>' + escapeHtml(item.name) + '</td>' +
+          '<td style="word-break:break-all; font-family:monospace;">' + escapeHtml(item.email) + '</td>' +
+          '<td style="white-space:nowrap; text-align:center;"><span class="' + item.badgeClass + '">' + item.type + '</span></td>' +
+          '<td style="color:#c0392b; font-weight:bold;">' + escapeHtml(item.reason) + '</td>' +
+          '</tr>';
+      }).join('');
+
+      const detailHtml = '<div style="margin-bottom:12px; color:#c0392b; font-size:14px; line-height:1.6;">' +
+        '为避免发信出现静默遗漏或重复投递，系统已拦截加载。请在 Excel 表格中修改以下单元格后重新导入：' +
+        '</div>' +
+        '<div style="max-height:360px; overflow-y:auto; border:1px solid #eee; border-radius:4px;">' +
+        '<table style="width:100%; border-collapse:collapse; font-size:13px;">' +
+        '<thead><tr style="background:#f8f9fa; position:sticky; top:0; z-index:2; border-bottom:2px solid #dee2e6;">' +
+        '<th style="width:70px; text-align:center; padding:8px 6px;">位置</th>' +
+        '<th style="padding:8px 6px;">部门</th>' +
+        '<th style="padding:8px 6px;">分组</th>' +
+        '<th style="padding:8px 6px;">姓名</th>' +
+        '<th style="padding:8px 6px;">问题邮箱</th>' +
+        '<th style="width:85px; text-align:center; padding:8px 6px;">问题类型</th>' +
+        '<th style="padding:8px 6px;">错误原因</th>' +
+        '</tr></thead><tbody>' + errorRows + '</tbody></table></div>';
+
+      showResult('收件人名单格式异常', '共发现 ' + validationErrors.length + ' 条记录存在问题（单元格未填 / 格式错误 / 邮箱重复）：', detailHtml, true);
+      return;
     }
 
     if (!recipients.length) {
-        showResultDialog('名单为空', '收件人名单为空或格式不正确');
+      showResultDialog('名单为空', '收件人名单中未读取到任何有效人员数据');
       return;
     }
 
@@ -194,37 +347,20 @@ async function parseExcelBuffer(buf, filename) {
       $('recip-path-input').value = filename;
     }
 
-    // 尝试从后端获取排序数据，按"部门"和"分组" sheet 中的"展示排序"排列
-    try {
-      const sortResp = await fetch('/api/sort-order');
-      if (sortResp.ok) {
-        const sortData = await sortResp.json();
-        // 按 sort 数据重新排列 deptOrder
-        if (sortData.depts && sortData.depts.length > 0) {
-          var sortedDepts = sortData.depts.map(function(d) { return d.name; });
-          // 保留不在排序 sheet 中的部门（按原始顺序追加到末尾）
-          state.deptOrder.forEach(function(d) {
-            if (!sortedDepts.includes(d)) sortedDepts.push(d);
-          });
-          // 只保留收件人名单中实际出现的部门
-          state.deptOrder = sortedDepts.filter(function(d) {
-            return state.recipients.some(function(r) { return r.dept === d; });
-          });
-        }
-        // 按 sort 数据重新排列 groupOrder
-        if (sortData.groups && sortData.groups.length > 0) {
-          var sortedGroups = sortData.groups.map(function(g) { return g.name; });
-          state.groupOrder.forEach(function(g) {
-            if (!sortedGroups.includes(g)) sortedGroups.push(g);
-          });
-          state.groupOrder = sortedGroups.filter(function(g) {
-            return state.recipients.some(function(rec) { return rec.group === g; });
-          });
-        }
-      }
-    } catch (sortErr) {
-      // 排序获取失败，保持原始顺序
-    }
+    // 直接从当前 Excel 中读取"部门"与"分组" sheet 进行展示排序
+    var deptSheetName = (state.config && state.config.sheet_depts) || '部门';
+    var groupSheetName = (state.config && state.config.sheet_groups) || '分组';
+
+    var deptSortItems = extractSortFromWorkbook(wb, deptSheetName, '部门');
+    var groupSortItems = extractSortFromWorkbook(wb, groupSheetName, '分组');
+
+    state.deptOrder = applyOrderSort(state.deptOrder, deptSortItems, function(d) {
+      return state.recipients.some(function(r) { return r.dept === d; });
+    });
+
+    state.groupOrder = applyOrderSort(state.groupOrder, groupSortItems, function(g) {
+      return state.recipients.some(function(rec) { return rec.group === g; });
+    });
 
     // 触发筛选控件和列表更新
     state.deptFilters = {};
@@ -233,9 +369,13 @@ async function parseExcelBuffer(buf, filename) {
     state.deptOrder.forEach(d => { state.deptFilters[d] = true; });
     state.groupOrder.forEach(g => { state.groupFilters[g] = true; state.groupTypes[g] = '收件人'; });
 
-    buildFilterControls();
-    updateRecipientList();
-    updatePreview();
+    if (window.AppEventBus) {
+      AppEventBus.emit('recipients:loaded');
+    } else {
+      buildFilterControls();
+      updateRecipientList();
+      updatePreview();
+    }
   } catch (e) {
     showResultDialog('解析失败', '解析 Excel 失败: ' + e.message);
   }

@@ -206,8 +206,12 @@ async function scanAttachmentsLocal(folderPath) {
     state.attachMode = 'local';
 
     updateAttachStatus();
-    updateRecipientList();
-    updatePreview();
+    if (window.AppEventBus) {
+      AppEventBus.emit('attachments:updated');
+    } else {
+      updateRecipientList();
+      updatePreview();
+    }
   } catch (e) {
     $('status-text').textContent = '扫描失败: ' + e.message;
     showResultDialog('扫描失败', '扫描失败: ' + e.message);

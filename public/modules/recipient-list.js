@@ -5,10 +5,17 @@
  */
 
 function initRecipientList() {
+  if (window.AppEventBus) {
+    AppEventBus.on('recipients:loaded', updateRecipientList);
+    AppEventBus.on('filters:changed', updateRecipientList);
+    AppEventBus.on('attachments:updated', updateRecipientList);
+  }
+
   // 抄送自己开关
   $('cc-self-toggle').addEventListener('change', function() {
     state.ccSelf = this.checked;
-    updatePreview();
+    if (window.AppEventBus) AppEventBus.emit('selection:changed');
+    else updatePreview();
   });
 
   // 表头全选 checkbox 联动
@@ -18,7 +25,8 @@ function initRecipientList() {
       state.personChecks[idx] = checked;
     });
     updateRecipientList();
-    updatePreview();
+    if (window.AppEventBus) AppEventBus.emit('selection:changed');
+    else updatePreview();
   });
 
   // 筛选弹出层
@@ -61,7 +69,8 @@ function updateRecipientList() {
     cb.onchange = () => {
       state.personChecks[idx] = cb.checked;
       updateRecipientList();
-      updatePreview();
+      if (window.AppEventBus) AppEventBus.emit('selection:changed');
+      else updatePreview();
     };
     tdSel.appendChild(cb);
     tr.appendChild(tdSel);

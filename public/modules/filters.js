@@ -6,7 +6,20 @@
  */
 
 function initFilters() {
-  // 初始化时无操作，等名单加载后由 buildFilterControls 生成
+  if (window.AppEventBus) {
+    AppEventBus.on('recipients:loaded', function() {
+      buildFilterControls();
+    });
+  }
+}
+
+function notifyFilterChanged() {
+  if (window.AppEventBus) {
+    AppEventBus.emit('filters:changed');
+  } else {
+    updateRecipientList();
+    updatePreview();
+  }
 }
 
 function buildFilterControls() {
@@ -28,8 +41,7 @@ function buildFilterControls() {
   groupAllBtn.onclick = () => {
     state.groupOrder.forEach(g => { state.groupFilters[g] = true; });
     buildFilterControls();
-    updateRecipientList();
-    updatePreview();
+    notifyFilterChanged();
   };
   const groupNoneBtn = document.createElement('button');
   groupNoneBtn.className = 'title-btn';
@@ -37,8 +49,7 @@ function buildFilterControls() {
   groupNoneBtn.onclick = () => {
     state.groupOrder.forEach(g => { state.groupFilters[g] = false; });
     buildFilterControls();
-    updateRecipientList();
-    updatePreview();
+    notifyFilterChanged();
   };
   groupTitleBtns.appendChild(groupAllBtn);
   groupTitleBtns.appendChild(groupNoneBtn);
@@ -57,8 +68,7 @@ function buildFilterControls() {
     cb.checked = state.groupFilters[group] !== false;
     cb.onchange = () => {
       state.groupFilters[group] = cb.checked;
-      updateRecipientList();
-      updatePreview();
+      notifyFilterChanged();
     };
     item.appendChild(cb);
     item.appendChild(document.createTextNode(' ' + group + ' '));
@@ -74,8 +84,7 @@ function buildFilterControls() {
     state.groupTypes[group] = state.groupTypes[group] || '收件人';
     sel.onchange = () => {
       state.groupTypes[group] = sel.value;
-      updateRecipientList();
-      updatePreview();
+      notifyFilterChanged();
     };
     item.appendChild(sel);
     groupRow.appendChild(item);
@@ -99,8 +108,7 @@ function buildFilterControls() {
   deptAllBtn.onclick = () => {
     state.deptOrder.forEach(d => { state.deptFilters[d] = true; });
     buildFilterControls();
-    updateRecipientList();
-    updatePreview();
+    notifyFilterChanged();
   };
   const deptNoneBtn = document.createElement('button');
   deptNoneBtn.className = 'title-btn';
@@ -108,8 +116,7 @@ function buildFilterControls() {
   deptNoneBtn.onclick = () => {
     state.deptOrder.forEach(d => { state.deptFilters[d] = false; });
     buildFilterControls();
-    updateRecipientList();
-    updatePreview();
+    notifyFilterChanged();
   };
   deptTitleBtns.appendChild(deptAllBtn);
   deptTitleBtns.appendChild(deptNoneBtn);
@@ -127,8 +134,7 @@ function buildFilterControls() {
     cb.checked = state.deptFilters[dept] !== false;
     cb.onchange = () => {
       state.deptFilters[dept] = cb.checked;
-      updateRecipientList();
-      updatePreview();
+      notifyFilterChanged();
     };
     label.appendChild(cb);
     label.appendChild(document.createTextNode(' ' + dept));

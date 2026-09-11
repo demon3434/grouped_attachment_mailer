@@ -5,6 +5,14 @@
  */
 
 function initPreview() {
+  if (window.AppEventBus) {
+    AppEventBus.on('recipients:loaded', updatePreview);
+    AppEventBus.on('filters:changed', updatePreview);
+    AppEventBus.on('selection:changed', updatePreview);
+    AppEventBus.on('attachments:updated', updatePreview);
+    AppEventBus.on('config:updated', updatePreview);
+  }
+
   // 预览按钮 → 打开弹出层
   $('preview-btn').addEventListener('click', () => {
     openPreviewOverlay();
@@ -128,9 +136,3 @@ function updatePreview() {
     '共发送 ' + deptCount + ' 封邮件（' + peopleCount + ' 人，' + totalFiles + ' 个附件）';
 }
 
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}

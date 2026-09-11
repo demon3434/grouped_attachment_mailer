@@ -161,10 +161,27 @@ class Launcher
         return -1;
     }
 
+    /// <summary>
+    /// 无任务栏图标的 ContextMenuStrip
+    /// 添加 WS_EX_TOOLWINDOW 扩展样式，防止在无主窗体时在任务栏出现图标
+    /// </summary>
+    class NoTaskbarContextMenuStrip : ContextMenuStrip
+    {
+        protected override CreateParams CreateParams
+        {
+            get
+            {
+                CreateParams cp = base.CreateParams;
+                cp.ExStyle |= 0x00000080; // WS_EX_TOOLWINDOW
+                return cp;
+            }
+        }
+    }
+
     // ====== 托盘 ======
     static void CreateTrayIcon()
     {
-        trayMenu = new ContextMenuStrip();
+        trayMenu = new NoTaskbarContextMenuStrip();
         // 自定义渲染：大字号、充足内边距、彩色图标+文字垂直居中
         trayMenu.Renderer = new ModernTrayRenderer();
         trayMenu.ShowImageMargin = true;
@@ -202,11 +219,13 @@ class Launcher
         trayIcon.Text = "多部门点对点一键发送邮件";
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
-        trayIcon.Click += delegate {
-            trayMenu.Show();
-            typeof(NotifyIcon).GetMethod("ShowContextMenu",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                .Invoke(trayIcon, null);
+        trayIcon.MouseClick += (sender, e) => {
+            if (e.Button == MouseButtons.Left)
+            {
+                typeof(NotifyIcon).GetMethod("ShowContextMenu",
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                    .Invoke(trayIcon, null);
+            }
         };
     }
 

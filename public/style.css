@@ -217,12 +217,27 @@ tbody tr.unchecked { color: gray; }
 /* ====== 关闭红叉按钮 ====== */
 .close-x {
   width: 36px; height: 36px; border: none; border-radius: 4px;
-  background: transparent; cursor: pointer; font-size: 18px; line-height: 1;
+  background: transparent; cursor: pointer; font-size: 20px; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   color: #666; transition: all 0.15s;
+  position: relative; z-index: 10; pointer-events: auto !important;
 }
 .close-x:hover {
   background: #e81123; color: white;
+}
+
+/* ====== 校验异常徽章 ====== */
+.badge-empty {
+  display: inline-block; padding: 2px 7px; font-size: 12px; font-weight: bold;
+  border-radius: 3px; background: #fff3cd; color: #856404; border: 1px solid #ffeeba;
+}
+.badge-format {
+  display: inline-block; padding: 2px 7px; font-size: 12px; font-weight: bold;
+  border-radius: 3px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+}
+.badge-dup {
+  display: inline-block; padding: 2px 7px; font-size: 12px; font-weight: bold;
+  border-radius: 3px; background: #e8daef; color: #5b2c6f; border: 1px solid #d2b4de;
 }
 
 /* ====== 发送预览弹出层 ====== */
@@ -250,70 +265,137 @@ tbody tr.unchecked { color: gray; }
   padding: 20px; overflow-y: auto; flex: 1;
 }
 
-/* ====== 进度弹窗（放在 .overlay-content 之后，确保 width 覆盖 ====== */
-/* 弹窗固定尺寸，发送阶段和等待阶段一致 */
-.overlay-content.progress-dialog {
-  width: 480px; max-width: 90%; height: 260px;
+/* ====== 进度大看板弹窗 ====== */
+.overlay-content.progress-dashboard-dialog {
+  width: 880px; max-width: 95vw; max-height: 90vh;
   display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+  border-radius: 8px;
 }
-.progress-dialog .overlay-header {
-  background: linear-gradient(135deg, #4a90d9, #3578c8);
-  border-bottom: none;
+.progress-dashboard-dialog .overlay-header {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-bottom: none; color: #fff;
+  padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
 }
-.progress-dialog .overlay-title { color: #fff; }
-.progress-dialog .overlay-body {
-  flex: 1; min-height: 0;
-  padding: 20px 28px 16px 28px;
-  display: flex; flex-direction: column;
+.dashboard-header-left { display: flex; align-items: center; gap: 10px; }
+.dashboard-dept-badge {
+  background: rgba(255,255,255,0.2); color: #fff;
+  font-size: 13px; font-weight: normal; padding: 2px 10px; border-radius: 12px;
 }
-.progress-info {
-  font-size: 15px; color: #333; line-height: 1.6;
-  min-height: 50px; text-align: center;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
+.dashboard-stats { font-size: 14px; color: #e0e7ff; }
+
+.dashboard-body {
+  flex: 1; min-height: 0; padding: 16px 20px;
+  display: flex; flex-direction: column; overflow-y: auto; background: #fff;
 }
-/* 倒计时行始终占位，避免发送/等待阶段高度变化 */
-.progress-countdown {
-  font-size: 20px; font-weight: bold; color: #4a90d9;
-  line-height: 1.3; min-height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
+
+/* 概要信息卡片 */
+.dashboard-summary-card {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+  padding: 10px 14px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px;
 }
-.progress-countdown::after { content: '后继续'; font-size: 14px; font-weight: normal; color: #888; margin-left: 4px; }
-/* 自定义进度条（替代原生 <progress>） */
+.summary-line { font-size: 14px; display: flex; align-items: baseline; }
+.summary-label { color: #64748b; font-weight: 600; width: 75px; flex-shrink: 0; }
+.summary-value { color: #1e293b; font-weight: 500; word-break: break-all; }
+
+/* 进度条与状态 */
+.dashboard-progress-section { margin-bottom: 12px; }
+.progress-status-row {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+}
+.progress-info { font-size: 15px; font-weight: 600; color: #1e293b; }
+.progress-countdown { font-size: 15px; font-weight: bold; color: #d97706; }
+
 .progress-bar-wrap {
-  width: 100%; height: 8px;
-  background: #e8e8e8; border-radius: 4px;
-  overflow: hidden; margin-top: 12px; flex-shrink: 0;
+  width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;
 }
 .progress-bar-fill {
   height: 100%; width: 0%;
-  background: linear-gradient(90deg, #4a90d9, #6baef0);
-  border-radius: 4px;
-  transition: width 0.3s ease;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 4px; transition: width 0.3s ease;
 }
-/* 部门名加粗突出显示 */
-.dept-highlight {
-  font-weight: bold; color: #4a90d9;
+
+/* 收件人明细表格 */
+.dashboard-table-wrap {
+  border: 1px solid #e2e8f0; border-radius: 6px; max-height: 250px; overflow-y: auto;
+  margin-bottom: 12px;
 }
-/* 停止按钮 */
-.abort-btn {
-  padding: 7px 26px; border: none; border-radius: 6px;
-  background: #e74c3c; color: white; cursor: pointer;
+.dashboard-table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+.dashboard-table th {
+  background: #f1f5f9; color: #475569; font-weight: 600; padding: 8px 10px;
+  border-bottom: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 1;
+}
+.dashboard-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.dashboard-table tr.active-sending { background: #eff6ff; }
+.dashboard-table tr.row-success { background: #f0fdf4; }
+.dashboard-table tr.row-error { background: #fef2f2; }
+
+/* 状态徽章 */
+.status-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 12px; font-weight: bold; line-height: 1.4;
+}
+.status-badge.pending { background: #f1f5f9; color: #64748b; }
+.status-badge.sending { background: #dbeafe; color: #1d4ed8; }
+.status-badge.success { background: #dcfce7; color: #15803d; }
+.status-badge.partial { background: #fef3c7; color: #b45309; }
+.status-badge.error { background: #fee2e2; color: #b91c1c; }
+.status-badge.stopped { background: #f1f5f9; color: #94a3b8; }
+
+/* 日志框 */
+.dashboard-log-box {
+  background: #0f172a; border-radius: 6px; padding: 10px 14px;
+  font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #cbd5e1;
+  margin-bottom: 8px;
+}
+.dashboard-log-box .log-title {
+  color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;
+}
+.dashboard-log-box .log-content { word-break: break-all; line-height: 1.5; }
+.dashboard-log-box .log-content.error { color: #f87171; font-weight: bold; }
+.dashboard-log-box .log-content.success { color: #4ade80; }
+
+/* 退信提示 */
+.dashboard-notice {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px;
+  padding: 8px 12px; font-size: 13px; color: #15803d; display: flex; align-items: center; gap: 8px;
+}
+.dashboard-notice .notice-icon { font-size: 16px; font-weight: bold; color: #16a34a; }
+
+/* 底部操作栏 */
+.dashboard-footer {
+  padding: 12px 20px; border-top: 1px solid #e2e8f0; background: #f8fafc;
+  display: flex; justify-content: flex-end; gap: 12px;
+}
+.retry-btn {
+  padding: 7px 24px; border: none; border-radius: 6px;
+  background: #f59e0b; color: white; cursor: pointer;
   font-family: inherit; font-size: 14px; font-weight: bold;
-  box-shadow: 0 1px 4px rgba(231,76,60,0.25);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
-  margin-top: 14px; align-self: center; flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(245,158,11,0.25);
+  transition: background 0.2s;
 }
-.abort-btn:hover {
-  background: #c0392b; box-shadow: 0 2px 8px rgba(231,76,60,0.3);
+.retry-btn:hover { background: #d97706; }
+
+.dashboard-close-btn {
+  padding: 7px 24px; border: none; border-radius: 6px;
+  background: #10b981; color: white; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: bold;
+  box-shadow: 0 1px 4px rgba(16,185,129,0.25);
+  transition: background 0.2s;
 }
-.abort-btn:active { transform: scale(0.96); }
-.abort-btn:disabled {
-  background: #bdc3c7; box-shadow: none; cursor: not-allowed;
+.dashboard-close-btn:hover { background: #059669; }
+
+/* 停止按钮通用 */
+.abort-btn {
+  padding: 7px 24px; border: none; border-radius: 6px;
+  background: #ef4444; color: white; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: bold;
+  box-shadow: 0 1px 4px rgba(239,68,68,0.25);
+  transition: background 0.2s, transform 0.1s;
 }
+.abort-btn:hover { background: #dc2626; }
+.abort-btn:active { transform: scale(0.97); }
+.abort-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; }
 .preview-table-wrap {
   border: 1px solid #ddd; border-radius: 5px; overflow: auto;
 }
@@ -354,10 +436,10 @@ tbody tr.unchecked { color: gray; }
   background: #fff; border-radius: 8px; width: 460px; max-width: 90%;
   box-shadow: 0 8px 32px rgba(0,0,0,0.3); overflow: hidden;
 }
-/* 结果对话框：固定尺寸，内容区可滚动 */
+/* 结果对话框：适度加宽以优雅容纳异常明细表，内容区可滚动 */
 .dialog-box-fixed {
-  width: 560px; max-width: 90%;
-  max-height: 80vh; display: flex; flex-direction: column;
+  width: 760px; max-width: 92%;
+  max-height: 85vh; display: flex; flex-direction: column;
 }
 .dialog-header {
   display: flex; align-items: center; justify-content: space-between;

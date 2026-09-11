@@ -120,10 +120,8 @@ async function onSendClick() {
 
     if (data.type === 'waiting') {
       clearCountdown();
-      var statusText = data.status === 'success' ? '已成功发送给' : '发送给';
       $('progress-info').innerHTML =
-        statusText + '<span class="dept-highlight">' + data.dept + '</span>，随机等待' + data.delay +
-        '秒后，将发送下一封邮件给<span class="dept-highlight">' + data.nextDept + '</span>';
+        '已投递给<span class="dept-highlight">' + data.dept + '</span>，下一封：<span class="dept-highlight">' + data.nextDept + '</span>';
       var remaining = data.delay;
       $('progress-countdown').textContent = remaining + ' 秒';
       countdownTimer = setInterval(function() {
@@ -159,7 +157,7 @@ function onSendDone(data) {
     // 构建汇总标题
     var title = data.aborted ? '已停止发送' : '发送完成';
     var summaryParts = [];
-    if (data.successCount) summaryParts.push('成功 ' + data.successCount);
+    if (data.successCount) summaryParts.push('已投递 ' + data.successCount);
     if (data.failCount) summaryParts.push('失败 ' + data.failCount);
     if (data.stopCount) summaryParts.push('停止 ' + data.stopCount);
     var summary = summaryParts.join('，') + '，共 ' + data.results.length + ' 封';
@@ -167,7 +165,7 @@ function onSendDone(data) {
     // 构建结果表格 HTML
     var rows = data.results.map(function(r) {
       var statusText, statusColor;
-      if (r.status === 'success') { statusText = '成功'; statusColor = '#5cb85c'; }
+      if (r.status === 'success') { statusText = '已投递'; statusColor = '#5cb85c'; }
       else if (r.status === 'error') { statusText = '失败'; statusColor = '#e81123'; }
       else { statusText = '已停止'; statusColor = '#999'; }
       var errInfo = r.error ? '<span class="result-err">' + r.error + '</span>' : '';

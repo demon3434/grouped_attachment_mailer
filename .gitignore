@@ -6,11 +6,11 @@ conf.json
 
 # ===== 编译产物 / 可执行文件（源码提交，exe 自行编译） =====
 # 启动器 exe（由 launcher.cs 编译，已嵌入图标）
-批量分组发送邮件.exe
+多部门点对点一键发送邮件.exe
 # 文件选择器 exe（由对应 .cs 编译，Win7 需本地编译）
 lib/filepicker.exe
 lib/folderpicker.exe
-批量分组发送邮件工具.zip
+多部门点对点一键发送邮件工具.zip
 
 # ===== 本地运行时环境（体积大，克隆后自行准备） =====
 # runtime/node.exe 约 60MB，他人需自行下载 Node.js 或准备 runtime 目录

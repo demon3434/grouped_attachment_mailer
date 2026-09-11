@@ -5,6 +5,12 @@
  */
 
 function initRecipientList() {
+  // 抄送自己开关
+  $('cc-self-toggle').addEventListener('change', function() {
+    state.ccSelf = this.checked;
+    updatePreview();
+  });
+
   // 表头全选 checkbox 联动
   $('select-all-cb').addEventListener('change', function() {
     var checked = this.checked;

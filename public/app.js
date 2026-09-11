@@ -16,6 +16,7 @@ const state = {
   attachmentsMap: {},   // {部门: [{name, fullPath, size}]}
   attachRoot: null,
   sending: false,
+  ccSelf: false,         // 抄送自己开关
 };
 
 // ====== DOM 引用 ======

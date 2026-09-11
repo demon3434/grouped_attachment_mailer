@@ -42,6 +42,25 @@ function groupByDept() {
     var toAddrs = [...new Set(toPeople.map(function(p) { return p.email; }))];
     var ccAddrs = [...new Set(ccPeople.map(function(p) { return p.email; }))];
 
+    // 抄送自己：开启时将发件人邮箱加入 cc 列表（去重，避免已在 cc 中时重复）
+    if (state.ccSelf && state.config && state.config.username) {
+      var selfEmail = state.config.username;
+      if (ccAddrs.indexOf(selfEmail) === -1 && toAddrs.indexOf(selfEmail) === -1) {
+        ccAddrs.push(selfEmail);
+      }
+    }
+
+    // 抄送人员列表（用于预览展示）：在原 ccPeople 基础上追加发件人信息
+    var ccPeopleForPreview = ccPeople.slice();
+    if (state.ccSelf && state.config && state.config.username) {
+      var selfEmail2 = state.config.username;
+      var alreadyInCc = ccPeople.some(function(p) { return p.email === selfEmail2; });
+      var alreadyInTo = toPeople.some(function(p) { return p.email === selfEmail2; });
+      if (!alreadyInCc && !alreadyInTo) {
+        ccPeopleForPreview.push({ name: '（自己）', group: '', email: selfEmail2 });
+      }
+    }
+
     var attachments = state.attachmentsMap[dept] || [];
     var attachNames = attachments.map(function(f) { return f.name; });
     var attachFiles = attachments.map(function(f) {
@@ -51,7 +70,7 @@ function groupByDept() {
     result.push({
       dept: dept,
       toPeople: toPeople,
-      ccPeople: ccPeople,
+      ccPeople: ccPeopleForPreview,
       toAddrs: toAddrs,
       ccAddrs: ccAddrs,
       attachments: attachFiles,

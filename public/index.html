@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>批量分组发送邮件</title>
+  <title>多部门点对点一键发送邮件</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -50,7 +50,16 @@
       <!-- 收件人列表 -->
       <div class="panel-section flex-grow">
         <div class="panel-title">
-          <span>收件人列表 <span id="person-count" class="count-label">0/0 人</span></span>
+          <div class="title-left-group">
+            <span>收件人列表 <span id="person-count" class="count-label">0/0 人</span></span>
+            <span class="cc-self-group">
+              <span class="cc-self-label">抄送自己</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="cc-self-toggle">
+                <span class="toggle-track"></span>
+              </label>
+            </span>
+          </div>
           <span class="title-btn-group">
             <button id="filter-toggle-btn" class="title-btn filter-toggle-btn">筛选收件人分组、部门</button>
           </span>
@@ -81,7 +90,12 @@
             <button id="preview-btn" class="preview-btn">发送预览</button>
             <button id="send-btn" class="send-btn">发送</button>
             <span id="status-text" class="action-status"></span>
-            <button id="shutdown-btn" class="icon-btn shutdown-icon-btn" title="关闭服务">⏻</button>
+            <button id="shutdown-btn" class="icon-btn shutdown-icon-btn" title="关闭服务">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L12 12"/>
+                <path d="M6.3 6.3a8 8 0 1 0 11.4 0"/>
+              </svg>
+            </button>
             <button id="settings-btn" class="settings-btn" title="设置">⚙</button>
           </div>
         </div>
@@ -97,6 +111,7 @@
       </div>
       <div class="overlay-body" style="text-align:center;">
         <div id="progress-info" class="progress-info">准备中...</div>
+        <div id="progress-countdown" class="progress-countdown" style="display:none;"></div>
         <progress id="progress-bar" value="0" max="100" class="progress-bar" style="width:100%; margin-top:10px;"></progress>
       </div>
     </div>

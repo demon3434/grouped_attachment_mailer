@@ -64,7 +64,7 @@ function updatePreview() {
         var row = document.createElement('div');
         row.className = 'preview-person-row';
         var nameSpan = document.createElement('span');
-        nameSpan.textContent = p.name + '(' + p.group + ')';
+        nameSpan.textContent = p.group ? (p.name + '(' + p.group + ')') : p.name;
         nameSpan.className = 'preview-person-name';
         var emailSpan = document.createElement('span');
         emailSpan.textContent = ' ' + p.email;
@@ -87,7 +87,7 @@ function updatePreview() {
         var row = document.createElement('div');
         row.className = 'preview-person-row';
         var nameSpan = document.createElement('span');
-        nameSpan.textContent = p.name + '(' + p.group + ')';
+        nameSpan.textContent = p.group ? (p.name + '(' + p.group + ')') : p.name;
         nameSpan.className = 'preview-person-name';
         var emailSpan = document.createElement('span');
         emailSpan.textContent = ' ' + p.email;

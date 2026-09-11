@@ -1,5 +1,5 @@
 /*
- * 批量分组发送邮件启动器 (launcher.cs)
+ * 多部门点对点一键发送邮件启动器 (launcher.cs)
  *
  * 功能：
  *   1. 启动 runtime/node.exe lib/server.js
@@ -14,7 +14,7 @@
  *     /reference:System.Windows.Forms.dll
  *     /reference:System.Drawing.dll
  *     /win32icon:"icons/图标(服务已启用).ico"
- *     /out:批量分组发送邮件.exe launcher.cs
+ *     /out:多部门点对点一键发送邮件.exe launcher.cs
  */
 
 using System;
@@ -95,7 +95,7 @@ class Launcher
 
         // 尝试获取 Mutex，判断启动器是否已在运行
         bool createdNew;
-        mutex = new Mutex(true, "批量分组发送邮件_SingleInstance", out createdNew);
+        mutex = new Mutex(true, "多部门点对点一键发送邮件_SingleInstance", out createdNew);
 
         // 先检测端口是否已有服务在运行
         int existingPort = DetectExistingServer();
@@ -117,7 +117,7 @@ class Launcher
             isOurProcess = false;
 
             CreateTrayIcon();
-            UpdateTray("批量分组发送邮件 (端口 " + existingPort + ")", true, true);
+            UpdateTray("多部门点对点一键发送邮件 (端口 " + existingPort + ")", true, true);
 
             Thread watcher = new Thread(ServerWatcher);
             watcher.IsBackground = true;
@@ -199,7 +199,7 @@ class Launcher
 
         trayIcon = new NotifyIcon();
         trayIcon.Icon = LoadIcon(false);
-        trayIcon.Text = "批量分组发送邮件";
+        trayIcon.Text = "多部门点对点一键发送邮件";
         trayIcon.ContextMenuStrip = trayMenu;
         trayIcon.Visible = true;
         trayIcon.Click += delegate {
@@ -435,7 +435,7 @@ class Launcher
         }
         else
         {
-            MessageBox(IntPtr.Zero, "服务未运行，请先启动服务。", "批量分组发送邮件", MB_OK | MB_ICONINFORMATION);
+            MessageBox(IntPtr.Zero, "服务未运行，请先启动服务。", "多部门点对点一键发送邮件", MB_OK | MB_ICONINFORMATION);
         }
     }
 
@@ -524,7 +524,7 @@ class Launcher
         {
             serverPort = port;
             serverRunning = true;
-            UpdateTray("批量分组发送邮件 (端口 " + port + ")", true, true);
+            UpdateTray("多部门点对点一键发送邮件 (端口 " + port + ")", true, true);
             OpenBrowser();
             // ServerWatcher 已在 Main 中统一启动，此处不再重复
         }
@@ -567,7 +567,7 @@ class Launcher
 
         serverRunning = false;
         serverPort = -1;
-        UpdateTray("批量分组发送邮件 (已停止)", false, true);
+        UpdateTray("多部门点对点一键发送邮件 (已停止)", false, true);
     }
 
     /// <summary>
@@ -626,7 +626,7 @@ class Launcher
                     }
                     serverRunning = false;
                     serverPort = -1;
-                    UpdateTray("批量分组发送邮件 (已停止)", false, true);
+                    UpdateTray("多部门点对点一键发送邮件 (已停止)", false, true);
                 }
             }
             else
@@ -637,7 +637,7 @@ class Launcher
                     serverPort = port;
                     serverRunning = true;
                     isOurProcess = false;  // 不是本实例启动的
-                    UpdateTray("批量分组发送邮件 (端口 " + port + ")", true, true);
+                    UpdateTray("多部门点对点一键发送邮件 (端口 " + port + ")", true, true);
                 }
             }
         }
@@ -728,7 +728,7 @@ class Launcher
     {
         try
         {
-            MessageBox(IntPtr.Zero, msg, "批量分组发送邮件", MB_OK | MB_ICONERROR);
+            MessageBox(IntPtr.Zero, msg, "多部门点对点一键发送邮件", MB_OK | MB_ICONERROR);
         }
         catch { }
     }

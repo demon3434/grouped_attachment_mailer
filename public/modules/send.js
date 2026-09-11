@@ -57,27 +57,74 @@ async function onSendClick() {
   $('progress-bar').value = 0;
   $('progress-bar').max = sendTasks.length;
   $('progress-info').textContent = '正在发送 0/' + sendTasks.length + '...';
+  $('progress-countdown').style.display = 'none';
+  $('progress-countdown').textContent = '';
+
+  var countdownTimer = null;
+
+  function clearCountdown() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+    $('progress-countdown').style.display = 'none';
+    $('progress-countdown').textContent = '';
+  }
 
   // 发起 SSE 监听进度
   var es = new EventSource('/api/send/progress');
   es.onmessage = function(e) {
     var data = JSON.parse(e.data);
+
     if (data.type === 'done') {
+      clearCountdown();
       es.close();
       onSendDone(data);
-    } else {
+      return;
+    }
+
+    if (data.type === 'sending') {
+      // 正在发送给某部门
+      clearCountdown();
       $('progress-bar').value = data.index;
-      if (data.status === 'success') {
-        $('progress-info').textContent =
-          '已发送 ' + data.index + '/' + data.total + ': ' + data.dept + ' ✓';
-      } else {
-        $('progress-info').textContent =
-          '已发送 ' + data.index + '/' + data.total + ': ' + data.dept +
-          ' ✗ (' + (data.error || '') + ')';
-      }
+      $('progress-info').textContent =
+        '正在发送给' + data.dept + '... (' + (data.index + 1) + '/' + data.total + ')';
+      return;
+    }
+
+    if (data.type === 'waiting') {
+      // 已发送完当前部门，进入随机等待
+      clearCountdown();
+
+      var statusText = data.status === 'success' ? '已成功发送给' : '发送给';
+      var resultMark = data.status === 'success' ? ' ✓' : ' ✗';
+      $('progress-info').textContent =
+        statusText + data.dept + resultMark + '，随机等待' + data.delay +
+        '秒后，将发送下一封邮件给' + data.nextDept;
+
+      // 第二行：倒计时
+      var remaining = data.delay;
+      $('progress-countdown').textContent = remaining + ' 秒';
+      $('progress-countdown').style.display = 'block';
+
+      countdownTimer = setInterval(function() {
+        remaining--;
+        if (remaining <= 0) {
+          clearCountdown();
+        } else {
+          $('progress-countdown').textContent = remaining + ' 秒';
+        }
+      }, 1000);
+      return;
+    }
+
+    // success / error （非 waiting 的独立事件，更新进度条）
+    if (data.type === 'success' || data.type === 'error') {
+      $('progress-bar').value = data.index;
     }
   };
   es.onerror = function() {
+    clearCountdown();
     es.close();
   };
 
@@ -89,6 +136,7 @@ async function onSendClick() {
       body: JSON.stringify({ tasks: sendTasks }),
     });
   } catch (e) {
+    clearCountdown();
     es.close();
     $('progress-overlay').style.display = 'none';
     showResult('发送失败', '发送请求失败: ' + e.message, null);

@@ -107,7 +107,14 @@ body { font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif; font-size: 16px; 
 }
 
 /* ====== 标题栏按钮 ====== */
-.title-btn-group { display: flex; gap: 6px; }
+.title-btn-group { display: flex; gap: 6px; align-items: center; }
+.title-left-group { display: flex; align-items: center; gap: 16px; }
+.cc-self-group {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px; border: 1px solid #ddd; border-radius: 3px;
+  background: #fff; white-space: nowrap;
+}
+.cc-self-label { font-size: 14px; color: #555; white-space: nowrap; }
 .title-btn {
   padding: 3px 10px; border: 1px solid #ccc; border-radius: 3px;
   background: #f8f8f8; cursor: pointer; font-size: 14px; font-family: inherit;
@@ -183,8 +190,11 @@ tbody tr.unchecked { color: gray; }
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .shutdown-icon-btn {
-  background: #e81123; color: #fff; border-color: #e81123; font-size: 22px;
+  background: #e81123; color: #fff; border-color: #e81123;
   transition: background 0.15s ease, transform 0.1s ease;
+}
+.shutdown-icon-btn svg {
+  display: block;
 }
 .shutdown-icon-btn:hover {
   background: #c50f1f; box-shadow: 0 1px 4px rgba(232,17,35,0.5);
@@ -208,6 +218,10 @@ tbody tr.unchecked { color: gray; }
 }
 .progress-info {
   font-size: 16px; color: #333; padding: 10px 0; line-height: 1.6;
+}
+.progress-countdown {
+  font-size: 28px; font-weight: bold; color: #4a90d9; padding: 4px 0 6px 0;
+  line-height: 1.4;
 }
 
 /* ====== 关闭红叉按钮 ====== */

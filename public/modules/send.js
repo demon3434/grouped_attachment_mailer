@@ -65,8 +65,7 @@ async function onSendClick() {
   $('progress-bar').value = 0;
   $('progress-bar').max = sendTasks.length;
   $('progress-info').textContent = '正在发送 0/' + sendTasks.length + '...';
-  $('progress-countdown').style.display = 'none';
-  $('progress-countdown').textContent = '';
+  $('progress-countdown').innerHTML = '&nbsp;';
   $('progress-abort-btn').disabled = false;
   $('progress-abort-btn').textContent = '停止发送';
 
@@ -77,8 +76,7 @@ async function onSendClick() {
       clearInterval(countdownTimer);
       countdownTimer = null;
     }
-    $('progress-countdown').style.display = 'none';
-    $('progress-countdown').textContent = '';
+    $('progress-countdown').innerHTML = '&nbsp;';
   }
 
   // 发起 SSE 监听进度
@@ -115,20 +113,19 @@ async function onSendClick() {
     if (data.type === 'sending') {
       clearCountdown();
       $('progress-bar').value = data.index;
-      $('progress-info').textContent =
-        '正在发送给' + data.dept + '... (' + (data.index + 1) + '/' + data.total + ')';
+      $('progress-info').innerHTML =
+        '正在发送给<span class="dept-highlight">' + data.dept + '</span>... (' + (data.index + 1) + '/' + data.total + ')';
       return;
     }
 
     if (data.type === 'waiting') {
       clearCountdown();
       var statusText = data.status === 'success' ? '已成功发送给' : '发送给';
-      $('progress-info').textContent =
-        statusText + data.dept + '，随机等待' + data.delay +
-        '秒后，将发送下一封邮件给' + data.nextDept;
+      $('progress-info').innerHTML =
+        statusText + '<span class="dept-highlight">' + data.dept + '</span>，随机等待' + data.delay +
+        '秒后，将发送下一封邮件给<span class="dept-highlight">' + data.nextDept + '</span>';
       var remaining = data.delay;
       $('progress-countdown').textContent = remaining + ' 秒';
-      $('progress-countdown').style.display = 'block';
       countdownTimer = setInterval(function() {
         remaining--;
         if (remaining <= 0) {
@@ -173,7 +170,7 @@ function onSendDone(data) {
       else { statusText = '已停止'; statusColor = '#999'; }
       var errInfo = r.error ? '<span class="result-err">' + r.error + '</span>' : '';
       return '<tr>' +
-        '<td>' + r.dept + '</td>' +
+        '<td class="dept-highlight">' + r.dept + '</td>' +
         '<td style="color:' + statusColor + '; font-weight:bold;">' + statusText + '</td>' +
         '<td>' + errInfo + '</td>' +
         '</tr>';

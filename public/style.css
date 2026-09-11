@@ -216,12 +216,26 @@ tbody tr.unchecked { color: gray; }
 .progress-bar {
   flex: 1; height: 24px; border: 1px solid #ccc; border-radius: 4px;
 }
+/* 进度弹窗固定尺寸，发送阶段和等待阶段一致 */
+.progress-dialog {
+  width: 520px; max-width: 90%; height: 320px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.progress-dialog .overlay-body {
+  flex: 1; min-height: 0; padding: 20px 30px;
+}
 .progress-info {
   font-size: 16px; color: #333; padding: 10px 0; line-height: 1.6;
+  min-height: 56px; display: flex; align-items: center; justify-content: center;
 }
+/* 倒计时行始终占位，避免发送/等待阶段高度变化 */
 .progress-countdown {
   font-size: 28px; font-weight: bold; color: #4a90d9; padding: 4px 0 6px 0;
-  line-height: 1.4;
+  line-height: 1.4; min-height: 44px; display: flex; align-items: center; justify-content: center;
+}
+/* 部门名加粗突出显示 */
+.dept-highlight {
+  font-weight: bold; color: #4a90d9;
 }
 .abort-btn {
   padding: 8px 28px; border: 1px solid #e81123; border-radius: 5px;
@@ -347,6 +361,9 @@ tbody tr.unchecked { color: gray; }
 }
 .result-detail-wrap td {
   padding: 8px 12px; border-bottom: 1px solid #eee;
+}
+.result-detail-wrap td.dept-highlight {
+  font-weight: bold; color: #4a90d9;
 }
 .result-detail-wrap tr:last-child td { border-bottom: none; }
 .result-err { color: #e81123; font-size: 13px; }

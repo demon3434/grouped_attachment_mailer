@@ -13,6 +13,14 @@ function initSend() {
   $('result-ok-btn').addEventListener('click', function() {
     $('result-dialog').style.display = 'none';
   });
+  // 停止发送按钮
+  $('progress-abort-btn').addEventListener('click', onAbortClick);
+}
+
+function onAbortClick() {
+  $('progress-abort-btn').disabled = true;
+  $('progress-abort-btn').textContent = '正在停止...';
+  fetch('/api/send/abort', { method: 'POST' }).catch(function() {});
 }
 
 async function onSendClick() {
@@ -59,6 +67,8 @@ async function onSendClick() {
   $('progress-info').textContent = '正在发送 0/' + sendTasks.length + '...';
   $('progress-countdown').style.display = 'none';
   $('progress-countdown').textContent = '';
+  $('progress-abort-btn').disabled = false;
+  $('progress-abort-btn').textContent = '停止发送';
 
   var countdownTimer = null;
 
@@ -73,9 +83,27 @@ async function onSendClick() {
 
   // 发起 SSE 监听进度
   var es = new EventSource('/api/send/progress');
+  var posted = false;  // 确保只 POST 一次
 
   es.onmessage = function(e) {
     var data = JSON.parse(e.data);
+
+    // SSE 连接就绪，发送 POST 请求开始发送
+    if (data.type === 'ready' && !posted) {
+      posted = true;
+      fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tasks: sendTasks }),
+      }).catch(function(err) {
+        clearCountdown();
+        es.close();
+        $('progress-overlay').style.display = 'none';
+        showResult('发送失败', '发送请求失败: ' + err.message, null);
+        resetSendButton();
+      });
+      return;
+    }
 
     if (data.type === 'done') {
       clearCountdown();
@@ -85,7 +113,6 @@ async function onSendClick() {
     }
 
     if (data.type === 'sending') {
-      // 正在发送给某部门
       clearCountdown();
       $('progress-bar').value = data.index;
       $('progress-info').textContent =
@@ -94,20 +121,15 @@ async function onSendClick() {
     }
 
     if (data.type === 'waiting') {
-      // 已发送完当前部门，进入随机等待
       clearCountdown();
-
       var statusText = data.status === 'success' ? '已成功发送给' : '发送给';
-      var resultMark = data.status === 'success' ? ' ✓' : ' ✗';
+      var resultMark = data.status === 'success' ? ' \u2713' : ' \u2717';
       $('progress-info').textContent =
         statusText + data.dept + resultMark + '，随机等待' + data.delay +
         '秒后，将发送下一封邮件给' + data.nextDept;
-
-      // 第二行：倒计时
       var remaining = data.delay;
       $('progress-countdown').textContent = remaining + ' 秒';
       $('progress-countdown').style.display = 'block';
-
       countdownTimer = setInterval(function() {
         remaining--;
         if (remaining <= 0) {
@@ -119,31 +141,14 @@ async function onSendClick() {
       return;
     }
 
-    // success / error （非 waiting 的独立事件，更新进度条）
     if (data.type === 'success' || data.type === 'error') {
       $('progress-bar').value = data.index;
     }
   };
 
-  // SSE 连接出错时清理
   es.onerror = function() {
     clearCountdown();
     es.close();
-  };
-
-  // 等 SSE 连接建立后再发送 POST，避免首封邮件的 sending 事件丢失
-  es.onopen = function() {
-    fetch('/api/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tasks: sendTasks }),
-    }).catch(function(e) {
-      clearCountdown();
-      es.close();
-      $('progress-overlay').style.display = 'none';
-      showResult('发送失败', '发送请求失败: ' + e.message, null);
-      resetSendButton();
-    });
   };
 }
 
@@ -152,7 +157,14 @@ function onSendDone(data) {
   setTimeout(function() {
     resetSendButton();
     $('progress-overlay').style.display = 'none';
-    if (data.failCount === 0) {
+    if (data.aborted) {
+      var detail = data.failDetails
+        .map(function(d) { return d.dept + ': ' + d.error; })
+        .join('\n');
+      showResult('已停止发送',
+        '已发送 ' + data.successCount + ' 封，停止 ' + data.failCount + ' 封',
+        data.failCount > 0 ? '停止详情:\n' + detail : null);
+    } else if (data.failCount === 0) {
       showResult('发送成功', '全部 ' + data.successCount + ' 封邮件发送成功！', null);
     } else {
       var detail = data.failDetails

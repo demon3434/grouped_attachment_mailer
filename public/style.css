@@ -223,6 +223,14 @@ tbody tr.unchecked { color: gray; }
   font-size: 28px; font-weight: bold; color: #4a90d9; padding: 4px 0 6px 0;
   line-height: 1.4;
 }
+.abort-btn {
+  padding: 8px 28px; border: 1px solid #e81123; border-radius: 5px;
+  background: #e81123; color: white; cursor: pointer;
+  font-family: inherit; font-size: 16px; font-weight: bold;
+  transition: background 0.15s;
+}
+.abort-btn:hover { background: #c01020; }
+.abort-btn:disabled { background: #aaa; border-color: #aaa; cursor: not-allowed; }
 
 /* ====== 关闭红叉按钮 ====== */
 .close-x {

@@ -109,11 +109,13 @@
       <div class="overlay-header">
         <span class="overlay-title">正在发送邮件</span>
       </div>
-      <div class="overlay-body" style="text-align:center; display:flex; flex-direction:column; justify-content:center;">
+      <div class="overlay-body">
         <div id="progress-info" class="progress-info">准备中...</div>
         <div id="progress-countdown" class="progress-countdown">&nbsp;</div>
-        <progress id="progress-bar" value="0" max="100" class="progress-bar" style="width:100%; margin-top:10px;"></progress>
-        <button id="progress-abort-btn" class="abort-btn" style="margin-top:14px;">停止发送</button>
+        <div class="progress-bar-wrap">
+          <div id="progress-bar-fill" class="progress-bar-fill"></div>
+        </div>
+        <button id="progress-abort-btn" class="abort-btn">停止发送</button>
       </div>
     </div>
   </div>

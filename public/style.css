@@ -213,38 +213,68 @@ tbody tr.unchecked { color: gray; }
 }
 .send-btn:hover { background: #3578c8; }
 .send-btn:disabled { background: #aaa; cursor: not-allowed; }
-.progress-bar {
-  flex: 1; height: 24px; border: 1px solid #ccc; border-radius: 4px;
-}
-/* 进度弹窗固定尺寸，发送阶段和等待阶段一致 */
+/* ====== 进度弹窗 ====== */
+/* 弹窗固定尺寸，发送阶段和等待阶段一致 */
 .progress-dialog {
   width: 520px; max-width: 90%; height: 320px;
   display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
 }
+.progress-dialog .overlay-header {
+  background: linear-gradient(135deg, #4a90d9, #3578c8);
+  border-bottom: none;
+}
+.progress-dialog .overlay-title { color: #fff; }
 .progress-dialog .overlay-body {
-  flex: 1; min-height: 0; padding: 20px 30px;
+  flex: 1; min-height: 0;
+  padding: 28px 36px 24px 36px;
+  display: flex; flex-direction: column;
 }
 .progress-info {
-  font-size: 16px; color: #333; padding: 10px 0; line-height: 1.6;
-  min-height: 56px; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #333; line-height: 1.7;
+  min-height: 54px; text-align: center;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
 /* 倒计时行始终占位，避免发送/等待阶段高度变化 */
 .progress-countdown {
-  font-size: 28px; font-weight: bold; color: #4a90d9; padding: 4px 0 6px 0;
-  line-height: 1.4; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: bold; color: #4a90d9;
+  line-height: 1.3; min-height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+/* 自定义进度条（替代原生 <progress>） */
+.progress-bar-wrap {
+  width: 100%; height: 10px;
+  background: #e8e8e8; border-radius: 5px;
+  overflow: hidden; margin-top: 16px; flex-shrink: 0;
+}
+.progress-bar-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #4a90d9, #6baef0);
+  border-radius: 5px;
+  transition: width 0.3s ease;
 }
 /* 部门名加粗突出显示 */
 .dept-highlight {
   font-weight: bold; color: #4a90d9;
 }
+/* 停止按钮 */
 .abort-btn {
-  padding: 8px 28px; border: 1px solid #e81123; border-radius: 5px;
-  background: #e81123; color: white; cursor: pointer;
-  font-family: inherit; font-size: 16px; font-weight: bold;
-  transition: background 0.15s;
+  padding: 9px 32px; border: none; border-radius: 6px;
+  background: #e74c3c; color: white; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: bold;
+  box-shadow: 0 2px 8px rgba(231,76,60,0.35);
+  transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+  margin-top: 20px; align-self: center; flex-shrink: 0;
 }
-.abort-btn:hover { background: #c01020; }
-.abort-btn:disabled { background: #aaa; border-color: #aaa; cursor: not-allowed; }
+.abort-btn:hover {
+  background: #c0392b; box-shadow: 0 3px 12px rgba(231,76,60,0.45);
+}
+.abort-btn:active { transform: scale(0.96); }
+.abort-btn:disabled {
+  background: #bdc3c7; box-shadow: none; cursor: not-allowed;
+}
 
 /* ====== 关闭红叉按钮 ====== */
 .close-x {

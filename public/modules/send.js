@@ -62,8 +62,7 @@ async function onSendClick() {
 
   // 显示进度弹出层
   $('progress-overlay').style.display = 'flex';
-  $('progress-bar').value = 0;
-  $('progress-bar').max = sendTasks.length;
+  $('progress-bar-fill').style.width = '0%';
   $('progress-info').textContent = '正在发送 0/' + sendTasks.length + '...';
   $('progress-countdown').innerHTML = '&nbsp;';
   $('progress-abort-btn').disabled = false;
@@ -112,7 +111,8 @@ async function onSendClick() {
 
     if (data.type === 'sending') {
       clearCountdown();
-      $('progress-bar').value = data.index;
+      var pct = Math.round((data.index / data.total) * 100);
+      $('progress-bar-fill').style.width = pct + '%';
       $('progress-info').innerHTML =
         '正在发送给<span class="dept-highlight">' + data.dept + '</span>... (' + (data.index + 1) + '/' + data.total + ')';
       return;
@@ -138,7 +138,8 @@ async function onSendClick() {
     }
 
     if (data.type === 'success' || data.type === 'error') {
-      $('progress-bar').value = data.index;
+      var pct2 = Math.round((data.index / sendTasks.length) * 100);
+      $('progress-bar-fill').style.width = pct2 + '%';
     }
   };
 
@@ -149,6 +150,7 @@ async function onSendClick() {
 }
 
 function onSendDone(data) {
+  $('progress-bar-fill').style.width = '100%';
   // 延迟关闭进度层，让用户看到最后一封的发送结果
   setTimeout(function() {
     resetSendButton();

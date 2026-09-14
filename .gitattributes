@@ -1,0 +1,22 @@
+# 统一文本文件的换行符处理：仓库中统一存为 LF
+* text=auto
+
+# 关键代码与配置文件固定为 LF
+*.js text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# 纯文本说明保留 Windows 兼容换行
+*.txt text eol=crlf
+
+# 二进制文件严禁触碰换行符
+*.exe binary
+*.zip binary
+*.xlsx binary
+*.ico binary
+*.png binary
+*.jpg binary

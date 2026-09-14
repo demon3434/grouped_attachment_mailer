@@ -557,6 +557,9 @@ tbody tr.unchecked { color: gray; }
   font-size: 15px; font-weight: normal; color: #fff; background: #4a90d9;
   padding: 2px 12px; border-radius: 12px; white-space: nowrap;
 }
+.sender-email-badge:empty {
+  display: none;
+}
 .sender-email-badge.empty {
   color: #c0392b; background: #fdf0f0; border: 1px solid #f5c6cb;
 }

@@ -5,6 +5,7 @@
 async function loadConfig() {
   try {
     const resp = await fetch('/api/config');
+    const data = await resp.json();
     state.config = data;
     if (window.AppEventBus) AppEventBus.emit('config:updated', data);
 
@@ -31,6 +32,11 @@ async function loadConfig() {
   } catch (e) {
     $('status-text').textContent = '无法连接服务器: ' + e.message;
     $('send-btn').disabled = true;
+    var badgeErr = $('sender-email-display');
+    if (badgeErr) {
+      badgeErr.textContent = '未配置发件人';
+      badgeErr.classList.add('empty');
+    }
   }
 }
 
@@ -42,19 +48,23 @@ function initConfig() {
   // 密码眼睛：按下显示明文，松开恢复密文
   var eyeBtn = $('toggle-password-btn');
   var pwdInput = $('set-password');
-  var _savedPwd = '******'; // 保存松开时要恢复的值
+  var _savedPwd = ''; // 保存松开时要恢复的值
   eyeBtn.addEventListener('mousedown', async function() {
     _savedPwd = pwdInput.value; // 记住当前值
-    // 如果是占位符，请求真实密码
-    if (_savedPwd === '******') {
+    if (_savedPwd) {
+      pwdInput.type = 'text';
+      eyeBtn.textContent = '🙈';
+    } else if (pwdInput.dataset.hasSaved === 'true') {
       try {
         var resp = await fetch('/api/password');
         var data = await resp.json();
-        pwdInput.value = data.password || '';
+        if (data.password) {
+          pwdInput.value = data.password;
+          pwdInput.type = 'text';
+          eyeBtn.textContent = '🙈';
+        }
       } catch (e) {}
     }
-    pwdInput.type = 'text';
-    eyeBtn.textContent = '🙈';
   });
   eyeBtn.addEventListener('mouseup', function() {
     pwdInput.type = 'password';
@@ -91,9 +101,19 @@ async function openSettings() {
     $('set-smtp-server').value = cfg.smtp_server || '';
     $('set-smtp-port').value = cfg.smtp_port || 465;
     $('set-username').value = cfg.username || '';
-    $('set-password').value = cfg.password ? '******' : '';
-    $('set-password').type = 'password';
+
+    var pwdInput = $('set-password');
+    pwdInput.value = '';
+    pwdInput.type = 'password';
     $('toggle-password-btn').textContent = '👁';
+    if (cfg.hasPassword || cfg.password) {
+      pwdInput.placeholder = '已设置密码（如无需修改请留空）';
+      pwdInput.dataset.hasSaved = 'true';
+    } else {
+      pwdInput.placeholder = '请输入邮箱密码或授权码';
+      pwdInput.dataset.hasSaved = 'false';
+    }
+
     $('set-use-ssl').checked = cfg.use_ssl !== false;
     $('set-random-delay').checked = cfg.random_delay !== false;
     $('set-port').value = cfg.port || 8460;
@@ -180,8 +200,8 @@ function collectSettingsForTest() {
     password: $('set-password').value.trim(),
     use_ssl: $('set-use-ssl').checked,
   };
-  // 密码是占位符时，需要先获取真实密码
-  if (cfg.password === '******') {
+  // 密码是占位符或留空时，若已有保存密码则使用真实密码
+  if (cfg.password === '******' || !cfg.password) {
     cfg._useRealPassword = true;
   }
   return cfg;
